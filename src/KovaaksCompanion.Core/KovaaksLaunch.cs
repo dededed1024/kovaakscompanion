@@ -22,7 +22,7 @@ public static class KovaaksLaunch
         }
         catch (Exception e)
         {
-            ErrorReporter.Report($"launch {url}", e, ErrorSeverity.High);
+            ErrorReporter.Report($"launch {url}", e, ErrorSeverity.Medium); // usually Steam missing: no release fixes it
             return false;
         }
     }

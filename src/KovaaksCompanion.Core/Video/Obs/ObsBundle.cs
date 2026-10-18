@@ -43,7 +43,7 @@ public static partial class ObsBundle
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException)
             {
-                ErrorReporter.Report($"obs extract to {root}", e, ErrorSeverity.High);
+                ErrorReporter.Report($"obs extract to {root}", e, ErrorSeverity.Medium);
             }
         }
         return null;

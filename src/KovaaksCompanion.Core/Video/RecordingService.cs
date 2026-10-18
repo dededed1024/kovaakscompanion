@@ -112,7 +112,7 @@ public sealed class RecordingService : IAsyncDisposable
                 if (await cam.StartAsync(id, encoder, config.Rotation, config.Cut)) _cams.Add((slot, cam));
                 else { Error?.Invoke($"webcam {slot + 1} off: " + cam.LastError); await cam.DisposeAsync(); }
             }
-            catch (Exception e) { ErrorReporter.Report("webcam start", e, ErrorSeverity.High); Error?.Invoke($"webcam {slot + 1} off: " + e.Message); }
+            catch (Exception e) { ErrorReporter.Report("webcam start", e, ErrorSeverity.Medium); Error?.Invoke($"webcam {slot + 1} off: " + e.Message); }
         }
     }
 

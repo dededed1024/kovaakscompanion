@@ -72,7 +72,7 @@ internal sealed class WebpFrameEncoder : IDisposable
                 catch (IOException) when (File.Exists(exe)) { File.Delete(tmp); }
                 return exe;
             }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { ErrorReporter.Report($"img2webp extract to {root}", e, ErrorSeverity.High); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { ErrorReporter.Report($"img2webp extract to {root}", e, ErrorSeverity.Medium); }
         }
         return null;
     }
