@@ -368,7 +368,7 @@ public partial class StatsView
             // Stats and calendar share one width, set to the picture's width.
             var body = new StackPanel { HorizontalAlignment = HorizontalAlignment.Left };
             _profileBody = body;
-            var stats = BuildPlayStats(runs, plays, 29, 17, FontWeights.Medium, ProfileInk, FontWeights.Light);
+            var stats = BuildPlayStats(runs, plays, 29, 17, FontWeights.SemiBold, ProfileInk, FontWeights.Normal);
             ((FrameworkElement)stats).Margin = new Thickness(0, 12, 4, 12);
             body.Children.Add(stats);
             var cal = new ActivityCalendar { EnglishOnly = true, MaxCell = 42, MaxWeeks = 22, ShowLabels = false, Margin = new Thickness(4, 0, 4, 28) };
