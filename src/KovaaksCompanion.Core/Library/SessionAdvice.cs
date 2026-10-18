@@ -27,7 +27,7 @@ public static class SessionAdvice
         Add(Accuracy(session, all, rel.Count >= MinCompared ? rel.Average(x => x.Rel) : null));
         Add(Overshooting(session, all));
         Add(Spread(session));
-        Add(Streak(rel));
+        Add(Streak(session));
         return list.Take(max).ToList();
     }
 
@@ -106,18 +106,19 @@ public static class SessionAdvice
     /// <summary>Runs of one scenario in a row that count as fresh; a longer streak's later runs are compared with them.</summary>
     const int FreshRuns = 6;
 
-    /// <summary>The scenario with the longest streak of consecutive runs this session, when its runs past the fresh ones fell below them.</summary>
-    static Advice? Streak(List<(RunRecord Run, double Rel)> rel)
+    /// <summary>The longest streak of one scenario played back to back this session, when its runs past the fresh ones fell below them.</summary>
+    static Advice? Streak(IReadOnlyList<RunRecord> session)
     {
-        var streaks = new List<List<(RunRecord Run, double Rel)>>();
-        foreach (var x in rel)
+        var streaks = new List<List<RunRecord>>();
+        foreach (var r in session.OrderBy(r => r.End))
         {
-            if (streaks.Count == 0 || !string.Equals(streaks[^1][0].Run.Scenario, x.Run.Scenario, StringComparison.OrdinalIgnoreCase)) streaks.Add([]);
-            streaks[^1].Add(x);
+            if (streaks.Count == 0 || !string.Equals(streaks[^1][0].Scenario, r.Scenario, StringComparison.OrdinalIgnoreCase)) streaks.Add([]);
+            streaks[^1].Add(r);
         }
         var longest = streaks.MaxBy(s => s.Count);
         if (longest is not { Count: >= FreshRuns + 3 }) return null;
-        var drop = longest.Skip(FreshRuns).Average(x => x.Rel) - longest.Take(FreshRuns).Average(x => x.Rel);
-        return drop <= -0.04 ? new Advice("You played {0} {1} times in a row, and the runs after the first {2} scored {3:0}% lower. Returns fade on a long streak, so **move on** to another scenario sooner and come back later.", [longest[0].Run.Scenario, longest.Count, FreshRuns, -drop * 100]) : null;
+        // One scenario, so raw scores compare directly; a scenario without a baseline still counts.
+        var drop = longest.Skip(FreshRuns).Average(r => r.Score) / longest.Take(FreshRuns).Average(r => r.Score) - 1;
+        return drop <= -0.04 ? new Advice("You played {0} {1} times in a row, and the runs after the first {2} scored {3:0}% lower. Returns fade on a long streak, so **move on** to another scenario sooner and come back later.", [longest[0].Scenario, longest.Count, FreshRuns, -drop * 100]) : null;
     }
 }

@@ -8,6 +8,8 @@ public sealed record Advice(string Format, object[] Args);
 /// <summary>
 /// Advice drawn from the statistics of one scenario's own runs. Every rule compares the player with themselves (best third of runs
 /// against worst third, one sensitivity against another) and stays silent when the data is too thin or the gap too small to mean anything.
+/// Runs are ranked against the player's form at the time (<see cref="ByForm{T}"/>), not by raw score: raw scores rise with practice, so the
+/// best third would otherwise be the latest runs and every habit that changed over time would look like what makes a good run.
 /// </summary>
 public static class ScenarioAdvice
 {
@@ -18,27 +20,29 @@ public static class ScenarioAdvice
     /// <summary>Records needed before a plateau is judged.</summary>
     const int MinPlateau = 40;
 
-    public static List<Advice> Build(ScenarioHistory s, IReadOnlyList<(double Score, RunSpeed Speed)>? speeds = null, int max = 10)
+    /// <param name="speeds">Mouse-speed figures of the runs that have them, with each run's end and score.</param>
+    public static List<Advice> Build(ScenarioHistory s, IReadOnlyList<(DateTime End, double Score, RunSpeed Speed)>? speeds = null, int max = 10)
     {
         var runs = s.Runs;
         var list = new List<Advice>();
         void Add(Advice? a) { if (a != null) list.Add(a); }
         var tracking = (MouseSpeedStats.KindFromName(s.Scenario) ?? (speeds is { Count: > 0 } ? MouseSpeedStats.KindFromRuns(speeds.Select(x => x.Speed).ToList()) : null)) == AimKind.Tracking;
 
+        // Most urgent first: a slump is about the session in progress, a plateau about what to practise next.
+        Add(Slump(s));
+        Add(Plateau(s));
         if (runs.Count >= MinRuns)
         {
-            var ordered = runs.OrderByDescending(r => r.Score).ToList();
+            var ordered = ByForm(runs, r => r.Score);
             var third = ordered.Count / 3;
             var top = ordered.Take(third).ToList();
             var bottom = ordered.TakeLast(third).ToList();
             Add(Sensitivity(runs));
             Add(AccuracyGap(top, bottom, tracking));
-            Add(Overshooting(runs));
             Add(TtkGap(top, bottom));
+            Add(Overshooting(runs));
         }
         Add(Consistency(s));
-        Add(Slump(s));
-        Add(Plateau(s));
         var sittings = Sittings(runs);
         Add(ColdStart(sittings));
         Add(LongStreak(sittings));
@@ -46,10 +50,35 @@ public static class ScenarioAdvice
         return list.Take(max).ToList();
     }
 
+    /// <summary>Runs on each side whose mean is a run's form.</summary>
+    const int FormWindow = 5;
+
+    /// <summary>
+    /// The runs (oldest first) ordered from furthest above to furthest below the player's form at the time: each score against the mean
+    /// of the <see cref="FormWindow"/> runs on each side of it.
+    /// </summary>
+    static List<T> ByForm<T>(IReadOnlyList<T> chronological, Func<T, double> score)
+    {
+        var n = chronological.Count;
+        var rel = new double[n];
+        for (var i = 0; i < n; i++)
+        {
+            double sum = 0;
+            var count = 0;
+            for (var j = Math.Max(0, i - FormWindow); j <= Math.Min(n - 1, i + FormWindow); j++)
+                if (j != i) { sum += score(chronological[j]); count++; }
+            rel[i] = count > 0 && sum > 0 ? score(chronological[i]) * count / sum : 1;
+        }
+        return Enumerable.Range(0, n).OrderByDescending(i => rel[i]).Select(i => chronological[i]).ToList();
+    }
+
     static double? Mean(IEnumerable<RunRecord> runs, Func<RunRecord, double?> get) =>
         runs.Select(get).OfType<double>().ToList() is { Count: > 0 } xs ? xs.Average() : null;
 
-    /// <summary>The sensitivity with the best average score, when it beats the most played one by at least 3%.</summary>
+    /// <summary>
+    /// The sensitivity with the best average score, when it beats the most played one by at least 3%. The most played one only counts its runs
+    /// from the time the other was played, so a sensitivity tried later, after more practice, does not win on practice alone.
+    /// </summary>
     static Advice? Sensitivity(IReadOnlyList<RunRecord> runs)
     {
         var groups = runs.Where(r => r.Cm360 is > 0).GroupBy(r => Math.Round(r.Cm360!.Value, 2)).Where(g => g.Count() >= MinGroup).ToList();
@@ -57,7 +86,10 @@ public static class ScenarioAdvice
         var main = groups.OrderByDescending(g => g.Count()).ThenBy(g => g.Key).First();
         var best = groups.OrderByDescending(g => g.Average(r => r.Score)).First();
         if (best.Key == main.Key) return null;
-        var gain = best.Average(r => r.Score) / main.Average(r => r.Score) - 1;
+        var (from, to) = (best.Min(r => r.Start), best.Max(r => r.End));
+        var same = main.Where(r => r.End >= from && r.Start <= to).ToList();
+        if (same.Count < MinGroup) return null;
+        var gain = best.Average(r => r.Score) / same.Average(r => r.Score) - 1;
         if (gain < 0.03) return null;
         // More cm per 360 is a lower sensitivity: it trades reach for fine control.
         return best.Key > main.Key
@@ -102,7 +134,7 @@ public static class ScenarioAdvice
         if (s.Records.Count < 10 || s.Best <= 0) return null;
         var gap = 1 - s.Records.TakeLast(RecentRecords).Average(r => r.Score) / s.Best;
         if (gap >= 0.25) return new Advice("Your recent average is {0:0}% below your best. A gap this wide means most runs fall apart somewhere, so **lower the pace** to one you can hold for the whole run and build speed back up from there.", [gap * 100]);
-        return gap >= 0.12 ? new Advice("Your average is {0:0}% below your best. Since you have already reached that score, the gap is about **consistency** rather than ability, so focus on repeating your usual level instead of chasing new highs.", [gap * 100]) : null;
+        return gap >= 0.12 ? new Advice("Your recent average is {0:0}% below your best. Since you have already reached that score, the gap is about **consistency** rather than ability, so focus on repeating your usual level instead of chasing new highs.", [gap * 100]) : null;
     }
 
     /// <summary>The latest five scores fell clearly below the five before.</summary>
@@ -157,9 +189,9 @@ public static class ScenarioAdvice
     }
 
     /// <summary>Mouse advice: the figures of the best third of plays against the worst third, for the figures that matter to the scenario's aim kind.</summary>
-    static List<Advice> Mouse(string scenario, IReadOnlyList<(double Score, RunSpeed Speed)> speeds)
+    static List<Advice> Mouse(string scenario, IReadOnlyList<(DateTime End, double Score, RunSpeed Speed)> speeds)
     {
-        var ordered = speeds.OrderByDescending(x => x.Score).Select(x => x.Speed).ToList();
+        var ordered = ByForm(speeds.OrderBy(x => x.End).ToList(), x => x.Score).Select(x => x.Speed).ToList();
         var third = ordered.Count / 3;
         var top = ordered.Take(third).ToList();
         var bottom = ordered.TakeLast(third).ToList();
