@@ -9,7 +9,7 @@ public sealed record AccountRatingResult(string Tier, double? TopPercent, double
     public string Color => AccountRating.ColorOf(Tier);
 
     /// <summary>"Top 4.3%", "Top 0.42%", "Top 0.017%"; empty for the lowest tier and Super GM.</summary>
-    public string TopLabel => TopPercent is { } p ? $"Top {p.ToString(p < 0.1 ? "0.###" : p < 1 ? "0.##" : p < 10 ? "0.#" : "0", CultureInfo.InvariantCulture)}%" : "";
+    public string TopLabel => TopPercent is { } p ? $"Top {p.ToString("F" + AccountRating.ShownDecimals(Tier), CultureInfo.InvariantCulture)}%" : "";
 }
 
 /// <summary>
@@ -86,6 +86,16 @@ public static class AccountRating
         if (tier == SuperGm) return "Voltaic and Viscose GM";
         if (tier == Order[0]) return "";
         return $"Top {Steps.First(s => s.Tier == tier).TopPercent.ToString("0.###", CultureInfo.InvariantCulture)}%";
+    }
+
+    /// <summary>Decimals shown for the account's share: two more than the tier's own requirement has (Top 7% shows 2, Top 0.35% shows 4).</summary>
+    public static int ShownDecimals(string tier)
+    {
+        var step = Steps.FirstOrDefault(s => s.Tier == tier);
+        if (step is null) return 2;
+        var text = step.TopPercent.ToString("0.###", CultureInfo.InvariantCulture);
+        var dot = text.IndexOf('.');
+        return (dot < 0 ? 0 : text.Length - dot - 1) + 2;
     }
 
     public static string ColorOf(string tier) => TierColors.GetValueOrDefault(tier, "#7A6C6C");
