@@ -65,10 +65,10 @@ public sealed class LiveSession(string runsFile)
         }
     }
 
-    /// <summary>The open session among <paramref name="sessions"/> (the one holding its runs), else null.</summary>
-    public PlaySession? Find(IEnumerable<PlaySession> sessions)
+    /// <summary>The open session among <paramref name="sessions"/> (the one holding its runs), else null. With <paramref name="sessionId"/>, that session instead (e.g. one that has just ended).</summary>
+    public PlaySession? Find(IEnumerable<PlaySession> sessions, Guid? sessionId = null)
     {
-        if (Id is not { } id) return null;
+        if ((sessionId ?? Id) is not { } id) return null;
         var ids = PlaySession.RunSessionIds;
         return sessions.FirstOrDefault(s => s.Runs.Any(r => ids.TryGetValue(UiState.RunKey(r.Scenario, r.End), out var x) && x == id));
     }

@@ -252,6 +252,7 @@ public partial class StatsView : UserControl
         _celebrateNext = false;
         UpdateTierMarks(celebrate);
         ShowHome();
+        if (_liveWanted is { } wanted && (DateTime.UtcNow > wanted.Until || TryOpenSession(wanted.Id))) _liveWanted = null;
         if (_confettiPending) _ = Dispatcher.BeginInvoke(DispatcherPriority.Loaded, FireConfetti);
         if (_popupOpen && _popupItem is { } open) ShowBenchmark(open, true);
         _ = SyncCloudAsync();
@@ -266,11 +267,23 @@ public partial class StatsView : UserControl
     /// <summary>Opens the popup on the running game's session; false when it has no run yet.</summary>
     public bool OpenLiveSession()
     {
+        if (_host.Live.Id is not { } id) return false;
+        if (TryOpenSession(id)) return true;
+        // The last run or a freshly built window is still loading: open the popup when the next load has it.
+        _liveWanted = (id, DateTime.UtcNow.AddSeconds(20));
+        return false;
+    }
+
+    (Guid Id, DateTime Until)? _liveWanted;
+
+    bool TryOpenSession(Guid id)
+    {
         var plays = AllPlays();
         PlaySession.RunSessionIds = RunSessionIds.AssignAll(_host.Settings.ArchiveDbFile, plays);
         var pbs = PbSet();
-        var live = _host.Live.Find(PlaySession.Group(plays, all: plays, personalBests: pbs));
+        var live = _host.Live.Find(PlaySession.Group(plays, all: plays, personalBests: pbs), id);
         if (live == null || live.RunCount == 0) return false;
+        _liveWanted = null;
         OpenSession(live, null);
         return true;
     }
