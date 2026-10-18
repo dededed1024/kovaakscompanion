@@ -28,6 +28,12 @@ public partial class SettingsView : UserControl
     {
         InitializeComponent();
         _host = host;
+        if (BuildConfig.DiscordInviteUrl.Length > 0)
+        {
+            DiscordButton.Tag = BuildConfig.DiscordInviteUrl;
+            DiscordButton.ToolTip = BuildConfig.DiscordInviteUrl.Replace("https://", "");
+            DiscordButton.Visibility = DiscordPrompt.Visibility = Visibility.Visible;
+        }
         _commit.Tick += (_, _) => Commit();
         Load();
         host.GameStateChanged += OnGameState;
@@ -784,8 +790,6 @@ public partial class SettingsView : UserControl
     }
 
     void OnCopyEmail(object sender, RoutedEventArgs e) => CopyAndFlash(sender, "dededed1024@icloud.com");
-
-    void OnCopyDiscord(object sender, RoutedEventArgs e) => CopyAndFlash(sender, "dededed1024");
 
     void CopyAndFlash(object sender, string text)
     {

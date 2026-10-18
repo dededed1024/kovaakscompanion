@@ -36,6 +36,18 @@
     </AssemblyAttribute>
   </ItemGroup>
 
+  <!-- Same fallback for the Discord invite link shown in Settings; empty hides the Discord icon. -->
+  <PropertyGroup Condition="'$(KOVAAKS_DISCORD_INVITE_URL)' == '' And Exists('$(MSBuildThisFileDirectory)../../.env')">
+    <KOVAAKS_DISCORD_INVITE_URL>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)../../.env')), 'KOVAAKS_DISCORD_INVITE_URL=(\S+)').Groups[1].Value)</KOVAAKS_DISCORD_INVITE_URL>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(KOVAAKS_DISCORD_INVITE_URL)' != ''">
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>DiscordInviteUrl</_Parameter1>
+      <_Parameter2>$(KOVAAKS_DISCORD_INVITE_URL)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   <!-- SQLite for the archive, on the winsqlite3.dll that ships with Windows: no native file to bundle or unpack, so the single-file exe stays one file. -->
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="10.0.13" />
