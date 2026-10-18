@@ -116,7 +116,7 @@ public static class SessionAdvice
         if (RunSetInsights.Summarize(nowRuns, none)?.OverShots is not { } a || RunSetInsights.Summarize(beforeRuns, none)?.OverShots is not { } b) return null;
         var p = t.SplitP(now, before);
         return a >= 0.2 && a - b >= 0.1 && a >= b * 1.15
-            ? new Advice("You fired {0:0.00} shots per kill at targets already dead this session, against {1:0.00} usually. Tiredness or impatience often causes this, so **release the click** the moment a target breaks.", [a, b]) { Area = AdviceArea.Movement, Effect = AdviceTests.NominalEffect, P = p }
+            ? new Advice("You fired {0:0.00} shots per kill at targets already dead this session, against {1:0.00} recently. Tiredness or impatience often causes this, so **release the click** the moment a target breaks.", [a, b]) { Area = AdviceArea.Movement, Effect = AdviceTests.NominalEffect, P = p }
             : null;
     }
 
