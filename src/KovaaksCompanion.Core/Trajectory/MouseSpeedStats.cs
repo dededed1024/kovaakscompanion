@@ -5,12 +5,20 @@ public enum AimKind { Tracking, Switching, Flick }
 
 /// <summary>
 /// Mouse-speed figures of one run (null where the run has nothing to measure). Speeds are angular, in deg/s, over a ~40 ms window
-/// so the quantised mouse counts do not spike them. The kill figures are medians over the kills, so one slow target does not skew them.
+/// so the quantised mouse counts do not spike them. <c>AccelStd</c> is the standard deviation of the acceleration (deg/s²) while the mouse moves; <c>BallisticRatio</c> the share of a flick spent reaching its peak speed;
+/// <c>StopToClick</c> the seconds from the speed falling under the moving threshold after the peak to the kill shot (only kills whose shot was found and that came to a stop). The kill figures are medians over the kills, so one slow target does not skew them.
 /// </summary>
 public sealed record RunSpeed(
     double Mean, double Peak, double Max, double? FireSpeed, double? IdleSpeed, double HoldRatio, double ReversalsPerSec,
     double? KillInterval, double? FlickDistance, double? FlickPeak, double? FlickTime, double? Reaction, double? Efficiency, int Kills,
-    double? Jerk = null, double? SpeedCv = null);
+    double? Jerk = null, double? SpeedCv = null, double? AccelStd = null, double? BallisticRatio = null, double? StopToClick = null)
+{
+    /// <summary>The sensitivity (cm per 360) the run was played at, set where the figures are matched to their run; never cached. Null when unknown, so deg/s cannot become cm/s.</summary>
+    public double? Cm360 { get; init; }
+
+    /// <summary>Converts a speed in deg/s to cm/s at this run's sensitivity; null when the sensitivity is unknown.</summary>
+    public double? ToCmPerSec(double degPerSec) => Cm360 is > 0 and var c ? degPerSec * c / 360 : null;
+}
 
 public static class MouseSpeedStats
 {
@@ -185,9 +193,27 @@ public static class MouseSpeedStats
             speedCv = Math.Sqrt(held.Sum(x => (x - m) * (x - m)) / held.Count) / m;
         }
 
+        // Acceleration over a 20 ms step, only where the mouse is moving at either end.
+        const int AccelStep = (int)(AnalysisHz / 50);
+        double accSum = 0, accSq = 0;
+        var accN = 0;
+        for (var i = 0; i + AccelStep < s.Count; i++)
+        {
+            if (v[i] < MoveDegPerSec && v[i + AccelStep] < MoveDegPerSec) continue;
+            var dt = s[i + AccelStep].TSec - s[i].TSec;
+            if (dt <= 0) continue;
+            var a = (v[i + AccelStep] - v[i]) / dt;
+            accSum += a; accSq += a * a; accN++;
+        }
+        double? accelStd = accN >= 50 ? Math.Sqrt(Math.Max(0, accSq / accN - (accSum / accN) * (accSum / accN))) : null;
+
+        // The kill shot of each kill: the last left-button fire just before it, once the CSV clock offset is removed (as ShotClassifier does).
+        var fires = data.Events.Where(e => e.Type == TrajectoryEventType.Fire && e.Button == 0).Select(e => e.TSec).Order().ToList();
+        var killOffset = ShotClassifier.EstimateKillOffset(fires, data.Events.Where(e => e.Type == TrajectoryEventType.Kill).Select(e => new KillShots(e.TSec, 0, 0)).ToList());
+
         // One flick per kill: from the previous kill (or the start) to this one.
         var kills = data.Events.Where(e => e.Type == TrajectoryEventType.Kill).Select(e => (double)e.TSec).Order().ToList();
-        List<double> interval = [], dist = [], fpeak = [], ftime = [], react = [], eff = [];
+        List<double> interval = [], dist = [], fpeak = [], ftime = [], react = [], eff = [], ballistic = [], stopClick = [];
         double prev = s[0].TSec;
         foreach (var kill in kills)
         {
@@ -198,7 +224,7 @@ public static class MouseSpeedStats
             var end = CameraPath.At(s, kill);
             var straight = KillFlicks.AngleBetween(a, end);
             if (straight < 2) continue; // the target was already under the crosshair
-            double path = 0, begin = double.NaN, top = 0;
+            double path = 0, begin = double.NaN, top = 0, topAt = double.NaN;
             var at = from;
             var last = a;
             for (var i = FirstAfter(s, from); i < s.Count; i++)
@@ -209,7 +235,7 @@ public static class MouseSpeedStats
                 var step = KillFlicks.AngleBetween(last, b);
                 path += step;
                 if (double.IsNaN(begin) && v[i] > MoveDegPerSec) begin = t;
-                top = Math.Max(top, v[i]);
+                if (v[i] > top) { top = v[i]; topAt = t; }
                 last = b;
                 at = t;
             }
@@ -221,9 +247,19 @@ public static class MouseSpeedStats
             ftime.Add(kill - begin);
             react.Add(begin - from);
             eff.Add(path > 0 ? Math.Min(1, straight / path) : 1);
+            if (!double.IsNaN(topAt) && kill - begin > 0.02) ballistic.Add(Math.Clamp((topAt - begin) / (kill - begin), 0, 1));
+
+            // Kill shot, then the moment the mouse last came to rest before it (the speed falling under the moving threshold after the peak).
+            var kt = kill - killOffset;
+            var shot = fires.Where(f => f >= kt - ShotClassifier.KillShotBefore && f <= kt + ShotClassifier.KillShotAfter).Select(f => (double?)f).LastOrDefault();
+            if (shot is { } fire && !double.IsNaN(topAt))
+            {
+                for (var i = FirstAfter(s, topAt); i < s.Count && s[i].TSec <= fire; i++)
+                    if (v[i] < MoveDegPerSec) { stopClick.Add(fire - s[i].TSec); break; }
+            }
         }
 
         return new RunSpeed(v.Average(), peak, sorted[^1], fireN > 0 ? fireSum / fireN : null, idleN > 0 ? idleSum / idleN : null, Math.Min(1, holdTime / span), reversals / span,
-            Median(interval), Median(dist), Median(fpeak), Median(ftime), Median(react), Median(eff), interval.Count, rmsJerk, speedCv);
+            Median(interval), Median(dist), Median(fpeak), Median(ftime), Median(react), Median(eff), interval.Count, rmsJerk, speedCv, accelStd, Median(ballistic), Median(stopClick));
     }
 }

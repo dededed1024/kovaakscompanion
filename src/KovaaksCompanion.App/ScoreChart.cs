@@ -24,6 +24,9 @@ public sealed class ScoreChart : FrameworkElement
     string _format = "0.#";
     ChartKind _kind;
     bool _overlays;
+
+    /// <summary>Runs the dashed moving-average line trails over (the mean of this run and the ones before it); 0 draws none. Line charts only.</summary>
+    public int AverageWindow { get; set; }
     int _hover = -1;
 
     public void Set(IReadOnlyList<(DateTime When, double Value)> points, string format = "0.#", ChartKind kind = ChartKind.Line, bool overlays = false, IReadOnlyList<ChartBand>? bands = null)
@@ -550,6 +553,20 @@ public sealed class ScoreChart : FrameworkElement
             var strokeBrush = new LinearGradientBrush(Color.FromArgb(0x8C, ac.R, ac.G, ac.B), ac, 0);
             strokeBrush.Freeze();
             dc.DrawGeometry(null, new Pen(strokeBrush, 2) { LineJoin = PenLineJoin.Round, StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }, line);
+
+            if (AverageWindow > 1 && n > 2)
+            {
+                var avgPts = new List<Point>(n);
+                for (var i = 0; i < n; i++)
+                {
+                    var g = _off + i;
+                    var from = Math.Max(0, g - AverageWindow + 1);
+                    double sum = 0;
+                    for (var k = from; k <= g; k++) sum += _all[k].Value;
+                    avgPts.Add(new Point(X(i), Y(sum / (g - from + 1))));
+                }
+                dc.DrawGeometry(null, new Pen(WithAlpha(Res("Fg"), 0.6), 1.5) { DashStyle = new DashStyle([4, 3], 0), LineJoin = PenLineJoin.Round }, ChartPaths.Monotone(avgPts));
+            }
 
             // Every run is a dot, whatever the density.
             var dotPen = new Pen(bg, 1);

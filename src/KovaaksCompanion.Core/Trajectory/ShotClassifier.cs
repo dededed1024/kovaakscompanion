@@ -15,7 +15,7 @@ public readonly record struct KillShots(double TSec, int Shots, int Hits);
 public static class ShotClassifier
 {
     /// <summary>The last shot of a kill must land this close to the kill time (clock offset + logging latency).</summary>
-    const double KillShotBefore = 0.30, KillShotAfter = 0.10;
+    public const double KillShotBefore = 0.30, KillShotAfter = 0.10;
 
     /// <summary>Search range and step for the mouse/CSV clock offset.</summary>
     const double MaxOffset = 1.0, OffsetStep = 0.005;

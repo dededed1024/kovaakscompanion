@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.InteropServices;
 using KovaaksCompanion.Core.Diagnostics;
 
@@ -95,6 +95,9 @@ public static unsafe class ObsRuntime
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { ErrorReporter.Report("obs stray plugin dir", e, ErrorSeverity.Low); }
     }
 
+    /// <summary>Why the GPU probes could not be placed for the encoder plugins; empty when they were.</summary>
+    public static string ProbeIssue { get; private set; } = "";
+
     static List<string> StageEncoderProbes(string bin)
     {
         var copies = new List<string>();
@@ -104,7 +107,12 @@ public static unsafe class ObsRuntime
         {
             var dst = Path.Combine(host, Path.GetFileName(src));
             try { File.Copy(src, dst, true); copies.Add(dst); }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { AppLog.Write("obs", $"cannot stage {Path.GetFileName(src)} in {host}: {e.Message}"); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                // Without the probe the encoder plugin cannot start it ("CreateProcessW failed: 2") and registers no encoder.
+                ProbeIssue = $"cannot copy {Path.GetFileName(src)} next to the app ({host}): {e.Message}";
+                ErrorReporter.Report("obs probe stage", e, ErrorSeverity.High);
+            }
         }
         return copies;
     }

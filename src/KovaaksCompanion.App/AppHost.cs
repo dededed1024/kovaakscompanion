@@ -472,7 +472,13 @@ public sealed class AppHost : IDisposable
         }, () => WebcamConfig.From(_settings));
         _video.Error += m => SetError("video: " + m, severity: ErrorSeverity.High);
         _video.GameLaunched += Live.Launch;
-        _video.GameExited += () => _ = Live.Exit();
+        _video.GameExited += () =>
+        {
+            // The session summary opens first: Live.Exit forgets which session is the open one.
+            try { _app.Dispatcher.Invoke(() => { if (Live.Id != null) { ShowMain(); _main!.ShowLiveSession(); } }); }
+            catch (Exception e) { SetError("session summary: " + e.Message, e); }
+            _ = Live.Exit();
+        };
         _video.StateChanged += () => GameStateChanged?.Invoke();
         _video.GameSized += (w, h) => { if (w != _settings.GameWidth || h != _settings.GameHeight) ApplySettings(_settings with { GameWidth = w, GameHeight = h }); };
         try { _video.Start(); } catch (Exception e) { SetError("video: " + e.Message, e, ErrorSeverity.High); }

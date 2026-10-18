@@ -41,6 +41,20 @@ public sealed class UiState
     /// <summary>Profile card shows the moving watermark; off = the static look a capture has.</summary>
     public bool ProfileAnimated { get; set; } = true;
 
+    /// <summary>Home Playlists and Scenarios tabs: the chosen goal keys ("rank", "streak", "recent", "stale", "new"); empty = no goal filter.</summary>
+    public IReadOnlyList<string> BrowseGoals { get; set; } = [];
+    /// <summary>Home list tab last shown ("Playlists", "Scenarios", "Sessions", "Runs", "Stats"); empty = the first.</summary>
+    public string BrowseTab { get; set; } = "";
+    /// <summary>Home lists: chosen aim kinds ("Tracking", "Flick", "Switching").</summary>
+    public IReadOnlyList<string> BrowseKinds { get; set; } = [];
+    /// <summary>Home playlist list: chosen levels ("Beginner", "Intermediate", "Advanced").</summary>
+    public IReadOnlyList<string> BrowseLevels { get; set; } = [];
+    /// <summary>Home lists: favorites only / personal bests only.</summary>
+    public bool BrowseFavOnly { get; set; }
+    public bool BrowsePbOnly { get; set; }
+    /// <summary>Home lists: chosen sort option index per tab.</summary>
+    public Dictionary<string, int> BrowseSorts { get; set; } = [];
+
     public const int MaxProfileItems = 6;
 
     List<string> _profile = [];
@@ -164,8 +178,6 @@ public sealed class UiState
         }
         if (FavoritesFull) return false;
         _favs.Add(playlist);
-        // A new favorite shows on the profile card (top) while there is room.
-        if (_profile.Count < MaxProfileItems) _profile.Insert(0, PlaylistKey(playlist));
         return true;
     }
 
@@ -183,7 +195,7 @@ public sealed class UiState
         }
     }
 
-    sealed record Dto(string[]? FavoritePlaylists, string[]? VisibleSeries, bool? ShowTrail = null, string? StatsChart = null, string? RadarAxes = null, bool? RadarCompare = null, string? TierPlaylist = null, string[]? TierPlaylists = null, string? ProfileName = null, string? ProfileImage = null, string? ProfileAccent = null, string[]? FavoriteScenarios = null, string[]? FavoriteRuns = null, bool? ComparePrev = null, bool? ProfileAnimated = null, string[]? ProfileItems = null, Dictionary<string, int>? DpiFixes = null, string[]? FavoriteSessions = null);
+    sealed record Dto(string[]? FavoritePlaylists, string[]? VisibleSeries, bool? ShowTrail = null, string? StatsChart = null, string? RadarAxes = null, bool? RadarCompare = null, string? TierPlaylist = null, string[]? TierPlaylists = null, string? ProfileName = null, string? ProfileImage = null, string? ProfileAccent = null, string[]? FavoriteScenarios = null, string[]? FavoriteRuns = null, bool? ComparePrev = null, bool? ProfileAnimated = null, string[]? ProfileItems = null, Dictionary<string, int>? DpiFixes = null, string[]? FavoriteSessions = null, string[]? BrowseGoals = null, string? BrowseTab = null, string[]? BrowseKinds = null, string[]? BrowseLevels = null, bool? BrowseFavOnly = null, bool? BrowsePbOnly = null, Dictionary<string, int>? BrowseSorts = null);
 
     static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
@@ -213,6 +225,13 @@ public sealed class UiState
             if (d?.ProfileImage is { } pi) s.ProfileImage = pi;
             if (d?.ProfileAccent is { } pa) s.ProfileAccent = pa;
             if (d?.ProfileAnimated is { } pm) s.ProfileAnimated = pm;
+            if (d?.BrowseGoals is { } bg) s.BrowseGoals = bg.Distinct().ToArray();
+            if (d?.BrowseTab is { } bt) s.BrowseTab = bt;
+            if (d?.BrowseKinds is { } bk) s.BrowseKinds = bk.Distinct().ToArray();
+            if (d?.BrowseLevels is { } bl) s.BrowseLevels = bl.Distinct().ToArray();
+            if (d?.BrowseFavOnly is { } bf) s.BrowseFavOnly = bf;
+            if (d?.BrowsePbOnly is { } bp) s.BrowsePbOnly = bp;
+            if (d?.BrowseSorts is { } bs) s.BrowseSorts = new Dictionary<string, int>(bs);
             if (d?.FavoriteScenarios is { } fs) s._favScenarios.AddRange(fs.Distinct(StringComparer.OrdinalIgnoreCase));
             if (d?.FavoriteRuns is { } fr) s._favRuns.AddRange(fr.Distinct());
             if (d?.FavoriteSessions is { } fss) s._favSessions.AddRange(fss.Distinct());
@@ -289,6 +308,6 @@ public sealed class UiState
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Diagnostics.ErrorReporter.Report("favorites save " + _archiveFile, e); }
         }
         var dir = Path.GetDirectoryName(path)!;
-        AccessGuard.Run(dir, true, () => { Directory.CreateDirectory(dir); File.WriteAllText(path, JsonSerializer.Serialize(new Dto(_favs.ToArray(), VisibleSeries.ToArray(), ShowTrail, StatsChart, RadarAxes, RadarCompare, null, _tiers.ToArray(), ProfileName, ProfileImage, ProfileAccent, inArchive ? null : _favScenarios.ToArray(), inArchive ? null : _favRuns.ToArray(), ComparePrev, ProfileAnimated, _profile.ToArray(), _dpiFixes.Count > 0 ? new Dictionary<string, int>(_dpiFixes) : null, inArchive ? null : _favSessions.ToArray()), Options)); });
+        AccessGuard.Run(dir, true, () => { Directory.CreateDirectory(dir); File.WriteAllText(path, JsonSerializer.Serialize(new Dto(_favs.ToArray(), VisibleSeries.ToArray(), ShowTrail, StatsChart, RadarAxes, RadarCompare, null, _tiers.ToArray(), ProfileName, ProfileImage, ProfileAccent, inArchive ? null : _favScenarios.ToArray(), inArchive ? null : _favRuns.ToArray(), ComparePrev, ProfileAnimated, _profile.ToArray(), _dpiFixes.Count > 0 ? new Dictionary<string, int>(_dpiFixes) : null, inArchive ? null : _favSessions.ToArray(), BrowseGoals.ToArray(), BrowseTab, BrowseKinds.ToArray(), BrowseLevels.ToArray(), BrowseFavOnly, BrowsePbOnly, BrowseSorts), Options)); });
     }
 }

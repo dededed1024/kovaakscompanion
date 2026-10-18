@@ -109,7 +109,7 @@ public partial class StatsView
             if (_popupOpen && _popupItem is { } open) ShowBenchmark(open, true);
         }
         catch (OperationCanceledException) { }
-        catch (Exception e) when (!ct.IsCancellationRequested) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("cloud load", e); } // offline or rate limited: the next reload tries again
+        catch (Exception e) when (!ct.IsCancellationRequested) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("cloud load", e, e is System.Net.Http.HttpRequestException ? KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Low : KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Medium); } // offline or rate limited: the next reload tries again
         finally { _syncing = false; HideSync(); UpdateTierMarks(false); } // server-side changes are no celebration
     }
 

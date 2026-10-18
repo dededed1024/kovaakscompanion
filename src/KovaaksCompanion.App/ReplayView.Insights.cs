@@ -51,10 +51,8 @@ public partial class ReplayView
         Add("Overshots", "Red", "0", Col(r => r.Run?.OverShots));
         Add("Reloads", "Mint", "0", Col(r => r.Run?.Reloads), true);
         Add("Distance moved", "Accent", "0.##", Col(r => r.Run?.Distance), true);
-        Add("Average speed", "Yellow", "0\"°/s\"", Col(r => SpeedOf(r)?.Mean));
+        Add("Average speed", "Yellow", "0.0\" cm/s\"", Col(r => SpeedOf(r) is { } sp ? (sp with { Cm360 = sp.Cm360 ?? r.Run?.Cm360 }).ToCmPerSec(sp.Mean) : null));
         Add("Reaction time", "Teal", "0\" ms\"", Col(r => SpeedOf(r)?.Reaction * 1000));
-        Add("Reloads", "Pink", "0", Col(r => r.Run?.Reloads));
-        Add("Distance moved", "Mint", "0.##", Col(r => r.Run?.Distance));
         return lines;
     }
 
@@ -75,18 +73,12 @@ public partial class ReplayView
         foreach (var line in _lines.Prepend(new ChartLine(L.T("Score"), (Brush)FindResource("Accent"), "0.#", [])))
         {
             var name = line.Name;
-            var on = _lineShown.Contains(name);
-            var row = new StackPanel { Orientation = Orientation.Horizontal };
-            row.Children.Add(new System.Windows.Shapes.Ellipse { Width = 9, Height = 9, Fill = line.Brush, VerticalAlignment = VerticalAlignment.Center });
-            row.Children.Add(new TextBlock { Text = name, Foreground = on ? FgB : DimB, FontSize = 12.5, Margin = new Thickness(8, 0, 0, 0) });
-            var chip = new Border { Style = (Style)FindResource("Chip"), Cursor = Cursors.Hand, Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(0, 0, 4, 4), CornerRadius = new CornerRadius(8), Opacity = on ? 1 : 0.55, Child = row };
-            chip.MouseLeftButtonUp += (_, _) =>
+            host.Children.Add(StatBlocks.Chip(name, line.Brush, _lineShown.Contains(name), () =>
             {
                 if (!_lineShown.Remove(name)) _lineShown.Add(name);
                 _bigChart.SetLines(_lines, _lineShown);
                 RefreshLineChips();
-            };
-            host.Children.Add(chip);
+            }));
         }
     }
 
@@ -102,13 +94,10 @@ public partial class ReplayView
     UIElement ScoreChartBody()
     {
         var body = new StackPanel();
-        var title = new Grid { Margin = new Thickness(4, 0, 0, 8) };
-        title.Children.Add(new TextBlock { Text = L.T("Run stats"), Foreground = FgB, FontSize = 15, FontWeight = FontWeights.SemiBold });
         _rangeBar = new RangeBar { Width = 130, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, MinLen = ScoreChart.MinWindow };
         _rangeBar.Changed += (off, len) => _bigChart.SetView(off, len);
         _rangeBar.Reset += _bigChart.ResetView;
-        title.Children.Add(_rangeBar);
-        body.Children.Add(title);
+        body.Children.Add(StatBlocks.ChartHead("Run stats", _rangeBar));
         _lineChips = new WrapPanel { Margin = new Thickness(2, 0, 0, 6) };
         body.Children.Add(_lineChips);
         _bigChart.PointClicked -= OnBigChartClicked;
@@ -126,6 +115,8 @@ public partial class ReplayView
     readonly HashSet<CmpKind> _cmpShown = [CmpKind.Score];
     Border? _cmpHost;
     Guid _cmpMine;
+    /// <summary>The recorded play with the highest final score, or null when the open run is it (or none is recorded).</summary>
+    Guid? _cmpBest;
     List<Guid> _cmpIds = [];
 
     /// <summary>The running figures the comparison can show.</summary>
@@ -169,7 +160,9 @@ public partial class ReplayView
             foreach (var (id, series) in read) _perfCache[id] = series;
         }
         if (host != _cmpHost || !_runMode) return;
+        var top = infos.OrderByDescending(i => i.Score).First();
         _cmpMine = mine; _cmpIds = ids;
+        _cmpBest = top.Id != mine && top.Score > _items[si].Info.Score ? top.Id : null;
         RenderCompare(host);
     }
 
@@ -199,6 +192,8 @@ public partial class ReplayView
         if (seconds < 2) return;
         var others = _cmpIds.Select(id => _perfCache.GetValueOrDefault(id)).Where(p => p is { Count: > 0 }).Select(p => p!).ToList();
 
+        var bestPts = _cmpBest is { } bid ? _perfCache.GetValueOrDefault(bid) : null;
+        if (bestPts is not { Count: > 0 }) bestPts = null;
         var lines = new List<CompareLine>();
         foreach (var s in CompareSeries.Where(_cmpShown.Contains))
         {
@@ -211,14 +206,13 @@ public partial class ReplayView
                 avg[t] = vals.Count == 0 ? double.NaN : vals.Average();
             }
             var percent = s == CmpKind.Accuracy;
-            lines.Add(new CompareLine(CmpName(s), CmpBrush(s), percent ? "0%" : "0.#", percent ? "0.0%" : s == CmpKind.Distance ? "0.##" : "0.#", s == CmpKind.Score, run, avg));
+            lines.Add(new CompareLine(CmpName(s), CmpBrush(s), percent ? "0%" : "0.#", percent ? "0.0%" : s == CmpKind.Distance ? "0.##" : "0.#", s == CmpKind.Score, run, avg, bestPts is null ? null : Sample(bestPts, s, seconds)));
         }
         var chart = new CompareChart { Height = Card.Width is > 0 and var cw ? Math.Clamp(cw / CardAspect * 0.28, 120, 280) : 160, Margin = new Thickness(0, 8, 0, 6) };
         chart.Set(Enumerable.Range(0, seconds + 1).Select(i => (double)i).ToArray(), lines);
 
         var body = new StackPanel();
-        var head = new Grid { Margin = new Thickness(4, 0, 4, 8) };
-        head.Children.Add(new TextBlock { Text = L.T("Compared with average"), Foreground = FgB, FontSize = 15, FontWeight = FontWeights.SemiBold });
+        var head = StatBlocks.Head("Compare");
         // Where each shown figure ends, against the average.
         var deltas = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
         foreach (var l in lines)
@@ -230,6 +224,13 @@ public partial class ReplayView
             var delta = l.Percent ? $"{sign}{Math.Abs(d) * 100:0.0} pt" : endAvg > 0 ? $"{sign}{Math.Abs(d):0.#} ({sign}{Math.Abs(d) / endAvg * 100:0.0}%)" : $"{sign}{Math.Abs(d):0.#}";
             deltas.Children.Add(new System.Windows.Shapes.Ellipse { Width = 8, Height = 8, Fill = l.Brush, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(deltas.Children.Count == 0 ? 0 : 14, 0, 5, 0) });
             deltas.Children.Add(new TextBlock { Text = delta, Foreground = (Brush)FindResource(d >= 0 ? "Green" : "Red"), FontSize = 13, FontWeight = FontWeights.SemiBold });
+            if (l.Best is { } bestLine && bestLine.Reverse().FirstOrDefault(v => !double.IsNaN(v)) is var endBest && !double.IsNaN(endBest))
+            {
+                var db = endRun - endBest;
+                var bsign = db >= 0 ? "+" : "−";
+                var bt = l.Percent ? $"{bsign}{Math.Abs(db) * 100:0.0} pt" : $"{bsign}{Math.Abs(db):0.#}";
+                deltas.Children.Add(new TextBlock { Text = $"{L.T("Best")} {bt}", Foreground = DimB, FontSize = 12, Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center });
+            }
         }
         head.Children.Add(deltas);
         body.Children.Add(head);
@@ -238,39 +239,30 @@ public partial class ReplayView
         var chips = new WrapPanel();
         foreach (var option in CompareSeries)
         {
-            var on = _cmpShown.Contains(option);
-            var row = new StackPanel { Orientation = Orientation.Horizontal };
-            row.Children.Add(new System.Windows.Shapes.Ellipse { Width = 9, Height = 9, Fill = CmpBrush(option), VerticalAlignment = VerticalAlignment.Center });
-            row.Children.Add(new TextBlock { Text = CmpName(option), Foreground = on ? FgB : DimB, FontSize = 12.5, Margin = new Thickness(8, 0, 0, 0) });
-            var chip = new Border
-            {
-                Style = (Style)FindResource("Chip"), Cursor = Cursors.Hand, Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(0, 0, 4, 4), CornerRadius = new CornerRadius(8), Opacity = on ? 1 : 0.55,
-                Child = row,
-            };
-            chip.MouseLeftButtonUp += (_, _) =>
+            chips.Children.Add(StatBlocks.Chip(CmpName(option), CmpBrush(option), _cmpShown.Contains(option), () =>
             {
                 if (_cmpShown.Count == 1 && _cmpShown.Contains(option)) return;
                 _cmpShown.Clear();
                 _cmpShown.Add(option);
                 RenderCompare(host);
-            };
-            chips.Children.Add(chip);
+            }));
         }
         bar.Children.Add(chips);
         // Solid line = this run, dashed = the average (each in its figure's colour).
         var legend = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 5, 4, 0) };
-        void Key(string text, bool dashed)
+        void Key(string text, bool dashed, DoubleCollection? pattern = null)
         {
             var line = new System.Windows.Shapes.Line { X1 = 0, X2 = 16, Y1 = 0, Y2 = 0, Stroke = FgB, StrokeThickness = 2, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(legend.Children.Count == 0 ? 0 : 12, 0, 5, 0) };
-            if (dashed) line.StrokeDashArray = [2, 1.5];
+            if (dashed) line.StrokeDashArray = pattern ?? [2, 1.5];
             legend.Children.Add(line);
             legend.Children.Add(new TextBlock { Text = text, Foreground = DimB, FontSize = 12 });
         }
         Key(L.T("This run"), false);
         Key(L.T("Average"), true);
+        if (lines.Any(l => l.Best != null)) Key(L.T("Best"), true, [1, 3]);
         bar.Children.Add(legend);
         body.Children.Add(bar);
         body.Children.Add(chart);
-        host.Child = new Border { Style = (Style)FindResource("SheetCard"), Padding = new Thickness(20, 16, 20, 10), Margin = new Thickness(0, 4, 0, 0), Child = body };
+        host.Child = StatBlocks.CardBox(body, new Thickness(StatBlocks.CardPad.Left, StatBlocks.CardPad.Top, StatBlocks.CardPad.Right, 10), StatBlocks.CardMargin);
     }
 }

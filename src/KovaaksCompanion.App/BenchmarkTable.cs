@@ -302,7 +302,7 @@ public sealed class BenchmarkTable : UserControl
 
         return new Border
         {
-            CornerRadius = new CornerRadius(18), Background = Argb("#0DFFFFFF"), BorderBrush = Argb("#12FFFFFF"), BorderThickness = new Thickness(1), ClipToBounds = true, Child = g,
+            Style = (Style)Application.Current.FindResource("SheetCard"), ClipToBounds = true, Child = g,
         };
     }
 

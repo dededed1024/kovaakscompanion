@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using KovaaksCompanion.Core.Benchmarks;
 using KovaaksCompanion.Core.Library;
@@ -126,73 +126,10 @@ internal sealed class ArchiveDb(string file)
             CREATE INDEX IF NOT EXISTS replays_ended ON replays(ended);
             """);
         ImportLegacy(c);
-        RenameStoredDriftKey(c);
-    }
-
-    // ---- run record key rename ---------------------------------------------------------------------------------------------
-
-    const string DriftRenamedKey = "renamed-run-drift";
-
-    /// <summary>Older payloads keep a run's accuracy drift under "Perf"; it is "Drift" now. Renames the key in every run record of the JSON (any depth), leaving the rest as it is.</summary>
-    internal static byte[] RenameDriftKey(byte[] json)
-    {
-        try
-        {
-            if (JsonNode.Parse(json) is not { } root) return json;
-            var changed = false;
-            void Walk(JsonNode? node)
-            {
-                if (node is JsonObject o)
-                {
-                    if (o.ContainsKey("Scenario") && o.ContainsKey("Score") && o.ContainsKey("End") && o["Perf"] is { } perf && !o.ContainsKey("Drift"))
-                    {
-                        o.Remove("Perf");
-                        o["Drift"] = perf;
-                        changed = true;
-                    }
-                    foreach (var child in o.Select(p => p.Value).ToList()) Walk(child);
-                }
-                else if (node is JsonArray a)
-                    foreach (var child in a) Walk(child);
-            }
-            Walk(root);
-            return changed ? System.Text.Encoding.UTF8.GetBytes(root.ToJsonString()) : json;
-        }
-        catch (JsonException) { return json; }
     }
 
     /// <summary>A row's JSON: the payload itself, or its content when an earlier version stored it signed and masked.</summary>
     static byte[] PayloadJson(byte[] stored) => SignedFile.UnpackMasked(stored) ?? stored;
-
-    /// <summary>Rewrites the stored run records once (in one transaction) so their drift is read under the new key.</summary>
-    static void RenameStoredDriftKey(SqliteConnection c)
-    {
-        using (var m = c.CreateCommand())
-        {
-            m.CommandText = "SELECT 1 FROM meta WHERE key=$k";
-            m.Parameters.AddWithValue("$k", DriftRenamedKey);
-            if (m.ExecuteScalar() != null) return;
-        }
-        InTransaction(c, () =>
-        {
-            var rows = new List<(string Scenario, long Time, double Score, byte[] Payload)>();
-            using (var m = c.CreateCommand())
-            {
-                m.CommandText = "SELECT scenario, time, score, payload FROM runs WHERE has_record=1";
-                using var r = m.ExecuteReader();
-                while (r.Read()) rows.Add((r.GetString(0), r.GetInt64(1), r.GetDouble(2), (byte[])r[3]));
-            }
-            using var update = new Stmt(c, "UPDATE runs SET payload=$p WHERE scenario=$s AND time=$t AND score=$sc", "$p", "$s", "$t", "$sc");
-            foreach (var (scenario, time, score, payload) in rows)
-            {
-                var json = PayloadJson(payload);
-                var renamed = RenameDriftKey(json);
-                if (ReferenceEquals(renamed, json)) continue;
-                update.Run(renamed, scenario, time, score);
-            }
-            Exec(c, "INSERT OR REPLACE INTO meta VALUES($k, '1')", ("$k", DriftRenamedKey));
-        });
-    }
 
     /// <summary>Moves a corrupt database (and its WAL files) aside under a new name, then restores the last backup when there is one.</summary>
     void SetAside()
@@ -212,7 +149,7 @@ internal sealed class ArchiveDb(string file)
         ImportOnce(c, "runs", Path.Combine(_dir, StatsStore.RunsFile), path =>
         {
             if (SignedFile.TryReadMasked(path) is not { } b) return false;
-            var all = JsonSerializer.Deserialize<Dictionary<string, CachedRuns>>(RenameDriftKey(b)) ?? [];
+            var all = JsonSerializer.Deserialize<Dictionary<string, CachedRuns>>(b) ?? [];
             WriteBatch(c, all.Keys, (n, old) => new(StatsStore.Merge(old?.Runs ?? [], all[n].Runs), all[n].FetchedAt > (old?.FetchedAt ?? DateTime.MinValue) ? all[n].FetchedAt : old?.FetchedAt ?? DateTime.MinValue));
             return true;
         });
@@ -513,7 +450,8 @@ internal sealed class ArchiveDb(string file)
         }
         catch
         {
-            try { Exec(c, "ROLLBACK"); } catch (SqliteException e) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("archive rollback", e, KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Low); }
+            // A full disk or a failed COMMIT can end the transaction by itself; only a transaction that is still open is rolled back.
+            try { if (SQLitePCL.raw.sqlite3_get_autocommit(c.Handle) == 0) Exec(c, "ROLLBACK"); } catch (SqliteException e) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("archive rollback", e, KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Low); }
             throw;
         }
     }

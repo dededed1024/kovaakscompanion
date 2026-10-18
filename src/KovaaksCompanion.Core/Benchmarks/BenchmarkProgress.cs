@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace KovaaksCompanion.Core.Benchmarks;
 
@@ -185,7 +185,7 @@ public sealed class KovaaksApi(HttpClient? http = null)
                     if (++tried == 3) break; // the entry moved (a rank changed meanwhile): another benchmark is a better bet than more scenarios of this one
                 }
             }
-            catch (Exception e) when (e is HttpRequestException or InvalidOperationException or JsonException or TaskCanceledException && !ct.IsCancellationRequested) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("benchmark progress", e); }
+            catch (Exception e) when (e is HttpRequestException or InvalidOperationException or JsonException or TaskCanceledException && !ct.IsCancellationRequested) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("benchmark progress", e, e is HttpRequestException ? KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Low : KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Medium); } // offline: low
         }
         return null;
     }

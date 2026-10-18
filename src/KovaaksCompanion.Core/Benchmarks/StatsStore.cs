@@ -62,7 +62,7 @@ public sealed partial class StatsStore(string archiveFolder)
     public void SaveScores(string scenario, IEnumerable<CloudScore> scores, DateTime? now = null) =>
         SaveScoresBatch(new Dictionary<string, List<CloudScore>> { [scenario] = scores.ToList() }, now);
 
-    /// <summary>Keeps runs' full statistics (accuracy, kills, drift, sens), e.g. of a replay folder, so they still count once it is deleted.</summary>
+    /// <summary>Keeps runs' full statistics (accuracy, kills, sens), e.g. of a replay folder, so they still count once it is deleted.</summary>
     public void Archive(IEnumerable<RunRecord> records)
     {
         var list = records.ToList();

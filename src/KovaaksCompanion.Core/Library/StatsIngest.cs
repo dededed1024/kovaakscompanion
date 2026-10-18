@@ -29,7 +29,7 @@ public static class StatsIngest
                 string text;
                 using (var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
                 using (var sr = new StreamReader(fs)) text = sr.ReadToEnd();
-                fresh.Add(RunRecord.From(StatsCsvParser.Parse(file, text), ReadDrift(file)));
+                fresh.Add(RunRecord.From(StatsCsvParser.Parse(file, text)));
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("stats ingest", e); } // maybe still being written
             catch (Exception e) when (e is FormatException or ArgumentException or IndexOutOfRangeException or OverflowException) { AppLog.Write("stats", $"skipped {Path.GetFileName(file)}: {e.Message}"); }
@@ -39,15 +39,4 @@ public static class StatsIngest
 
     static bool IsArchived(Dictionary<string, DateTime[]> ends, string scenario, DateTime nameEnd) =>
         ends.TryGetValue(scenario, out var list) && list.Any(e => e >= nameEnd && e - nameEnd <= NameSlack);
-
-    /// <summary>Accuracy drift of the run's .perf, or null when it is missing or unreadable (older runs may have none).</summary>
-    static AccuracyDrift? ReadDrift(string statsCsv)
-    {
-        try
-        {
-            var path = PerfParser.PathFor(statsCsv);
-            return File.Exists(path) ? AccuracyDrift.From(PerfParser.Parse(File.ReadAllBytes(path))) : null;
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or PerfFormatException) { return null; }
-    }
 }

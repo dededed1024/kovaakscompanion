@@ -39,9 +39,8 @@ public static class ReplayStore
         {
             if (parts.Stats is null) return null;
             var perf = parts.Perf;
-            var drift = perf is null ? null : AccuracyDrift.From(perf);
             var speed = parts.Trajectory is { } t ? ReadSpeed(t) : null;
-            return RunRecord.From(parts.Stats.ToRunStats(info), drift, perf) with { Speed = speed };
+            return RunRecord.From(parts.Stats.ToRunStats(info), perf) with { Speed = speed };
         }
         catch (Exception e) when (e is FormatException or ArgumentException) { return null; }
     }

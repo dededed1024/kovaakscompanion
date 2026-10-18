@@ -34,7 +34,7 @@ public partial class StatsView
     }
 
     /// <summary>Vertical gap between cards and sections, and between grid tiles.</summary>
-    const double CardGap = 16, TileGap = 12;
+    const double CardGap = StatBlocks.Gap, TileGap = StatBlocks.Gap;
 
     const string Icons = "Segoe Fluent Icons, Segoe MDL2 Assets";
     PlaylistCtx? _ctx;
@@ -230,20 +230,17 @@ public partial class StatsView
     TextBlock Text(string text, double size, Brush fg, FontWeight? weight = null, Thickness? margin = null) =>
         new() { Text = text, FontSize = size, Foreground = fg, FontWeight = weight ?? FontWeights.Normal, Margin = margin ?? default };
 
-    Border Card(UIElement child, Thickness? pad = null, double gap = CardGap) => new()
-    {
-        CornerRadius = new CornerRadius(18), Background = Solid("#0DFFFFFF"), BorderBrush = Solid("#12FFFFFF"), BorderThickness = new Thickness(1),
-        Padding = pad ?? new Thickness(8), Margin = new Thickness(0, 0, 0, gap), Child = child,
-    };
+    /// <summary>The shared card surface around a list or table; <paramref name="pad"/> is the inner padding, <paramref name="gap"/> the space below.</summary>
+    Border Card(UIElement child, Thickness? pad = null, double gap = CardGap) =>
+        StatBlocks.CardBox(child, pad ?? new Thickness(8), new Thickness(0, 0, 0, gap));
 
-    /// <summary>A card with a title (17 SemiBold) and an optional one-line insight under it, above the body.</summary>
-    Border TitledCard(string title, string? subtitle, params UIElement[] body)
+    /// <summary>A stats card with the shared title and an optional note at its right end, above the body.</summary>
+    Border TitledCard(string title, string? note, params UIElement[] body)
     {
         var sp = new StackPanel();
-        sp.Children.Add(Text(L.T(title), 17, FgB, FontWeights.SemiBold, new Thickness(16, 12, 16, subtitle == null ? 4 : 0)));
-        if (subtitle != null) sp.Children.Add(new TextBlock { Text = subtitle, FontSize = 12.5, Foreground = DimB, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(16, 2, 16, 6) });
+        sp.Children.Add(StatBlocks.Head(title, note));
         foreach (var e in body) sp.Children.Add(e);
-        return Card(sp);
+        return StatBlocks.CardBox(sp, StatBlocks.CardPad, new Thickness(0, 0, 0, CardGap));
     }
 
     TextBlock Chevron(HorizontalAlignment h = HorizontalAlignment.Left) =>
@@ -309,14 +306,14 @@ public partial class StatsView
         var cats = CatInfos(c);
         _bench = new BenchmarkTable();
 
-        page.Children.Add(BuildActivity(c));
-
         // Scenarios
         page.Children.Add(FadeTitle("Scenarios"));
         page.Children.Add(BuildTable(c));
 
         // Charts
         page.Children.Add(FadeTitle("Charts"));
+        page.Children.Add(BuildActivity(c));
+        if (BuildStats(c, RunSetPart.Charts) is { } runCharts) page.Children.Add(runCharts);
         page.Children.Add(BuildBalance(c, cats));
         page.Children.Add(BuildBlocks(c));
         return page;
@@ -334,11 +331,24 @@ public partial class StatsView
         return sv;
     }
 
+    /// <summary>Statistics over every run of the playlist's scenarios (local runs and server plays), the last 30 days against all of them; null when none was played.</summary>
+    UIElement? BuildStats(PlaylistCtx c, RunSetPart part)
+    {
+        var names = c.P.Scenarios.Select(s => s.Scenario).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var (all, allPbs) = BrowsePlays();
+        var plays = all.Where(r => names.Contains(r.Scenario)).ToList();
+        if (plays.Count == 0) return null;
+        var pbs = allPbs.Where(r => names.Contains(r.Scenario)).ToHashSet();
+        var recent = plays.Where(r => r.End >= c.Cutoff).ToList();
+        (string, IReadOnlyList<RunRecord>)? focus = recent.Count > 0 && recent.Count < plays.Count ? (L.T("Last 30 days"), recent) : null;
+        return new Border { Margin = new Thickness(0, 0, 0, CardGap), Child = RunSetPanel(plays, pbs, focus, focus == null ? null : (L.T("All time"), plays), part: part, runChart: false) };
+    }
+
     UIElement BuildBlocks(PlaylistCtx c)
     {
         var total = c.Counts.Sum();
         var r = Math.Clamp(c.P.OverallTier, 0, c.Names.Count);
-        var blocks = new TierBlocksChart { Margin = new Thickness(16, 4, 16, 12) };
+        var blocks = new TierBlocksChart { Margin = new Thickness(0, 0, 0, 8) };
         blocks.SizeChanged += (_, ev) => { var h = Math.Clamp(ev.NewSize.Width * 0.44, 300, 560); if (double.IsNaN(blocks.Height) || Math.Abs(blocks.Height - h) > 1) blocks.Height = h; };
         blocks.Set(c.Blocks, c.Names, c.Brushes);
         return TitledCard("Scenarios by rank", r == 0 ? L.F("{0} of {1} ranked", total - c.Counts[0], total) : L.F("{0} of {1} at {2}+", c.Counts.Skip(r).Sum(), total, c.Names[r - 1]), blocks);
@@ -386,8 +396,8 @@ public partial class StatsView
             body.ColumnDefinitions.Clear();
             body.RowDefinitions.Clear();
             divider.Visibility = st ? Visibility.Collapsed : Visibility.Visible;
-            left.Margin = st ? new Thickness(16, 0, 16, 0) : new Thickness(16, 0, 12, 0);
-            right.Margin = st ? new Thickness(16, 0, 16, 0) : new Thickness(12, 0, 16, 0);
+            left.Margin = st ? new Thickness(0) : new Thickness(0, 0, 12, 0);
+            right.Margin = st ? new Thickness(0) : new Thickness(12, 0, 0, 0);
             if (st)
             {
                 body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -407,7 +417,7 @@ public partial class StatsView
         }
         body.SizeChanged += (_, ev) => Fit(ev.NewSize.Width);
         cal.SizeChanged += (_, _) => { if (stacked == false && chart is ScoreChart && cal.ActualHeight > 0) chart.Height = Math.Max(180, cal.ActualHeight); };
-        return Card(body, new Thickness(8, 16, 8, 8));
+        return Card(body, new Thickness(StatBlocks.CardPad.Left, StatBlocks.CardPad.Top, StatBlocks.CardPad.Right, 8));
     }
 
     // Skill balance
@@ -421,7 +431,7 @@ public partial class StatsView
             rb.Checked += OnAxesChecked;
             axes.Children.Add(rb);
         }
-        var head = new WrapPanel { Margin = new Thickness(16, 6, 16, 12) };
+        var head = new WrapPanel { Margin = new Thickness(0, 0, 0, 12) };
         head.Children.Add(new Border { Style = (Style)FindResource("SegmentTrack"), Child = axes, Margin = new Thickness(0, 0, 20, 0) });
         var legend = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         legend.Children.Add(new Border { Width = 10, Height = 10, CornerRadius = new CornerRadius(5), Background = new SolidColorBrush(Color.FromRgb(0x8E, 0x8E, 0x93)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) });
@@ -431,7 +441,7 @@ public partial class StatsView
         var ui = new BalanceUi();
         ui.Radar.VerticalAlignment = VerticalAlignment.Top;
         ui.List.VerticalAlignment = VerticalAlignment.Top;
-        ui.Body.Margin = new Thickness(16, 0, 16, 0);
+        ui.Body.Margin = new Thickness(0);
         ui.Body.Children.Add(ui.Radar);
         ui.Body.Children.Add(ui.List);
         ui.Body.SizeChanged += (_, ev) => { if (Math.Abs(ev.NewSize.Width - ui.LastW) > 0.5) LayoutBalance(ui); };
@@ -542,28 +552,12 @@ public partial class StatsView
             Grid.SetColumn(right, 1);
             g.Children.Add(right);
             var f = v / max;
-            var bar = strong ? BenchmarkTable.NextBar(f, (Brush)FindResource("Green"), 6) : weak ? BenchmarkTable.NextBar(f, (Brush)FindResource("Orange"), 6) : Meter(f, muted, 6);
+            var bar = strong ? BenchmarkTable.NextBar(f, (Brush)FindResource("Green"), 6) : weak ? BenchmarkTable.NextBar(f, (Brush)FindResource("Orange"), 6) : StatBlocks.MeterBar(f, muted, 6);
             ((FrameworkElement)bar).Margin = new Thickness(0, 6, 0, 0);
             Grid.SetRow(bar, 1); Grid.SetColumnSpan(bar, 2);
             g.Children.Add(bar);
             res.Add(g);
         }
         return res;
-    }
-
-    static UIElement Meter(double fraction, Brush fill, double h)
-    {
-        var g = new Grid { Height = h };
-        g.Children.Add(new Border { CornerRadius = new CornerRadius(h / 2), Background = Solid("#1AFFFFFF") });
-        var f = Math.Clamp(fraction, 0, 1);
-        if (f > 0.001)
-        {
-            var inner = new Grid();
-            inner.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(f, GridUnitType.Star) });
-            inner.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(1 - f, 1e-6), GridUnitType.Star) });
-            inner.Children.Add(new Border { CornerRadius = new CornerRadius(h / 2), Background = fill });
-            g.Children.Add(inner);
-        }
-        return g;
     }
 }

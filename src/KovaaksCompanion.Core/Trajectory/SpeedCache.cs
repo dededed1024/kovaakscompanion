@@ -9,7 +9,7 @@ namespace KovaaksCompanion.Core.Trajectory;
 public sealed class SpeedCache(string file)
 {
     /// <summary>Bump when <see cref="Entry"/> or <see cref="RunSpeed"/> changes shape, so older speed caches are rebuilt.</summary>
-    const int Schema = 3;
+    const int Schema = 4;
 
     record Entry(FileStamp Stamp, RunSpeed? Speed);
 

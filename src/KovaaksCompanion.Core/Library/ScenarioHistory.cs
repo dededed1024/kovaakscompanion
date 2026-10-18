@@ -56,16 +56,6 @@ public sealed class ScenarioHistory
     public double AverageAccuracy => Runs.Select(r => r.Accuracy).OfType<double>().DefaultIfEmpty(0).Average();
     public TimeSpan TimePlayed => TimeSpan.FromTicks(Runs.Sum(r => r.Duration.Ticks));
 
-    /// <summary>Mean accuracy drift (second half minus first half) over runs that have per-second data. Null without any.</summary>
-    public double? AverageDrift
-    {
-        get
-        {
-            var drifts = Runs.Select(r => r.Drift?.Change).OfType<double>().ToList();
-            return drifts.Count == 0 ? null : drifts.Average();
-        }
-    }
-
     /// <summary>Latest score as a fraction of the best (1 = at personal best). Null when never played.</summary>
     public double? LatestVsBest => Best > 0 && Latest is { } l ? l / Best : null;
 

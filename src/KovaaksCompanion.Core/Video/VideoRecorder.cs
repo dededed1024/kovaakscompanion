@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using KovaaksCompanion.Core.Diagnostics;
 using KovaaksCompanion.Core.Video.Mp4;
 using KovaaksCompanion.Core.Video.Obs;
@@ -48,7 +48,7 @@ public sealed class VideoRecorder : IAsyncDisposable
         if (!await Task.Run(() => ObsRuntime.Start(_o.ObsRoot))) { LastError = "libobs: " + ObsRuntime.LastError; return false; }
         var encoders = await Task.Run(() => ObsCapture.AvailableEncoders(_o.Encoder));
         AppLog.Write("video", $"encoder candidates [{string.Join(", ", encoders)}] (requested '{_o.Encoder}')");
-        if (encoders.Count == 0) { LastError = "no hardware H.264 encoder (NVENC/AMF/QSV) found"; return false; }
+        if (encoders.Count == 0) { LastError = "no hardware H.264 encoder (NVENC/AMF/QSV) found" + (ObsRuntime.ProbeIssue.Length > 0 ? " (" + ObsRuntime.ProbeIssue + ")" : ""); return false; }
 
         foreach (var enc in encoders)
         {

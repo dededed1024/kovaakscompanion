@@ -13,6 +13,7 @@ using System.Windows.Shapes;
 using KovaaksCompanion.Core.Benchmarks;
 using KovaaksCompanion.Core.Library;
 using KovaaksCompanion.Core.Replays;
+using KovaaksCompanion.Core.Trajectory;
 
 namespace KovaaksCompanion.App;
 
@@ -1001,6 +1002,12 @@ public partial class StatsView
         };
         Fill();
 
+        if (expanded && !capture && s.RunCount > 0)
+        {
+            var every = BrowsePlays().Plays;
+            rows.Children.Insert(0, new Border { Margin = new Thickness(0, 0, 0, 8), Child = RunSetPanel(s.Runs, pbs, (L.T("This session"), s.Runs), (L.T("All time"), every), byKind: true, advice: SessionAdvice.Build(s.Runs, every)) });
+        }
+
         var sep = new Border { Height = 1, Background = Solid("#14FFFFFF"), Margin = new Thickness(28, 0, 28, 4) };
         var bodyGrid = new Grid();
         bodyGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -1199,14 +1206,13 @@ public partial class StatsView
                 _progress.TryGetValue(x.D.KovaaksBenchmarkId, out var p);
                 var ranked = p != null && p.OverallTierName.Length > 0;
                 return (x.B, x.D, Fav: _host.Ui.IsFavorite($"{x.D.KovaaksBenchmarkId}"), Last: LastPlayed(x.D.KovaaksBenchmarkId),
-                    Tier: ranked ? p!.OverallTier : -1, Frac: ranked ? p!.OverallFraction : 0.0);
+                    Tier: ranked ? p!.OverallTier : -1, Frac: ranked ? p!.OverallFraction : 0.0, TopTier: p == null ? 0 : p.TierNames.Count - 1);
             })
-            .Where(i => !_favOnly || i.Fav);
+            .Where(i => (!_favOnly || i.Fav) && PlaylistKindOk(i.D.KovaaksBenchmarkId, _kinds) && LevelOk(i.B, i.D, _levels)
+                && GoalOk(i.Last, () => PbWeeks(PlaylistScenarios(i.D.KovaaksBenchmarkId)), i.Tier >= 0 && i.Tier < i.TopTier, i.Tier >= 0 && i.Tier >= i.TopTier));
         var o = BrowseSort switch
         {
-            1 => q.OrderBy(i => i.Last ?? DateTime.MaxValue), // never played: last
-            2 => q.OrderByDescending(i => i.Tier).ThenByDescending(i => i.Frac),
-            3 => q.OrderBy(i => i.B.BenchmarkName).ThenBy(i => i.D.DifficultyName),
+            1 => q.OrderByDescending(i => i.Tier).ThenByDescending(i => i.Frac),
             _ => q.OrderByDescending(i => i.Last ?? DateTime.MinValue).ThenByDescending(i => i.Tier).ThenByDescending(i => i.Frac),
         };
         return o.Select(i => (i.B, i.D, i.Fav)).ToList();
@@ -1215,12 +1221,14 @@ public partial class StatsView
     /// <summary>Sort options per tab; the first is the default. The choice is kept per tab until the app closes.</summary>
     static readonly Dictionary<string, string[]> SortOptions = new()
     {
-        ["Playlists"] = ["Newest", "Oldest", "Progress", "Name"],
-        ["Scenarios"] = ["Newest", "Oldest", "Tier", "Progress", "Plays", "Name"],
-        ["Sessions"] = ["Newest", "Oldest", "Longest", "Most runs", "PB"],
-        ["Runs"] = ["Newest", "Oldest", "Tier", "Progress"],
+        ["Playlists"] = ["Newest", "Progress"],
+        ["Scenarios"] = ["Newest", "Progress", "Plays"],
+        ["Sessions"] = ["Newest", "Longest"],
+        ["Runs"] = ["Newest", "Progress"],
+        ["Stats"] = [],
     };
-    readonly Dictionary<string, int> _sorts = [];
+    /// <summary>Playlists and Scenarios start sorted by progress; the other tabs by their first option.</summary>
+    readonly Dictionary<string, int> _sorts = new() { ["Playlists"] = 1, ["Scenarios"] = 1 };
     int BrowseSort => _sorts.GetValueOrDefault(_browseTab);
 
     /// <summary>Columns of a tab's list at this width: 3 playlist cards, fewer when narrow; scenarios and replays are one column of rows.</summary>
@@ -1241,7 +1249,7 @@ public partial class StatsView
     UIElement BuildBrowse()
     {
         var tabs = new UniformGrid { Rows = 1 };
-        foreach (var (kind, label, glyph) in new[] { ("Playlists", "Playlists", ""), ("Scenarios", "Scenarios", ""), ("Sessions", "Sessions", ""), ("Runs", "Record", "") })
+        foreach (var (kind, label, glyph) in new[] { ("Playlists", "Playlists", ""), ("Scenarios", "Scenarios", ""), ("Sessions", "Sessions", ""), ("Runs", "Record", ""), ("Stats", "Stats", "") })
         {
             var tab = kind;
             var content = new StackPanel { Orientation = Orientation.Horizontal };
@@ -1252,50 +1260,25 @@ public partial class StatsView
             {
                 if (_browseTab == tab) return;
                 _browseTab = tab;
-                ShowPbButton();
+                SaveBrowseState();
                 FillSortBox();
                 FillBrowse();
             };
             tabs.Children.Add(rb);
         }
         _browseTabs = new Border { Style = (Style)FindResource("SegmentTrack"), Child = tabs, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(TileGap / 2, 4, 0, 8) };
-        var filter = new Button
-        {
-            FontFamily = new FontFamily(Icons), Background = Brushes.Transparent, Padding = new Thickness(10, 0, 10, 0), Margin = new Thickness(0, 4, TileGap / 2, 8),
-            MinHeight = 36, MinWidth = 36, VerticalAlignment = VerticalAlignment.Center, ToolTip = L.T("Favorites only"),
-        };
-        void ShowFilter() => GlyphButton.Set(filter, _favOnly ? "" : "", (Brush)FindResource(_favOnly ? "Yellow" : "Dim"));
-        ShowFilter();
-        filter.Click += (_, _) => { _favOnly = !_favOnly; ShowFilter(); FillBrowse(); };
-        filter.Margin = new Thickness(0, 4, 6, 8);
         _browseBar = new Grid();
         _browseBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         _browseBar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        for (var c = 0; c < 4; c++) _browseBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        _browseBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         _browseBar.Children.Add(_browseTabs);
-        var funnel = new TextBlock { Text = "", FontFamily = new FontFamily(Icons), FontSize = 14, Foreground = (Brush)FindResource("Dim"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 4, 6, 8) };
-        Grid.SetColumn(funnel, 2);
-        _browseBar.Children.Add(funnel);
-        Grid.SetColumn(filter, 4);
-        _browseBar.Children.Add(filter);
-        _pbBtn = new Button
-        {
-            Background = Brushes.Transparent, Padding = new Thickness(8, 0, 8, 0), Margin = new Thickness(0, 4, 0, 8),
-            MinHeight = 36, MinWidth = 36, VerticalAlignment = VerticalAlignment.Center, ToolTip = L.T("PBs only"),
-            Content = new TextBlock { Text = "PB", FontFamily = FontFamily, FontSize = 13, FontWeight = FontWeights.SemiBold },
-        };
-        void ShowPbToggle() => ((TextBlock)_pbBtn.Content).Foreground = (Brush)FindResource(_pbOnly ? "Green" : "Dim");
-        ShowPbToggle();
-        _pbBtn.Click += (_, _) => { _pbOnly = !_pbOnly; ShowPbToggle(); FillBrowse(); };
-        Grid.SetColumn(_pbBtn, 3);
-        _browseBar.Children.Add(_pbBtn);
-        ShowPbButton();
-        _sortBox = new ComboBox { MinWidth = 130, MinHeight = 28, Height = 28, Margin = new Thickness(0, 4, TileGap / 2, 8), VerticalAlignment = VerticalAlignment.Center };
-        Grid.SetColumn(_sortBox, 5);
+        _sortBox = new ComboBox { MinWidth = 130, MinHeight = 28, Height = 28, Margin = new Thickness(6, 4, TileGap / 2, 8), VerticalAlignment = VerticalAlignment.Center };
+        Grid.SetColumn(_sortBox, 2);
         _sortBox.SelectionChanged += (_, _) =>
         {
             if (_sortBox.SelectedIndex < 0 || _sortBox.SelectedIndex == BrowseSort) return;
             _sorts[_browseTab] = _sortBox.SelectedIndex;
+            SaveBrowseState();
             FillBrowse();
         };
         FillSortBox();
@@ -1306,21 +1289,162 @@ public partial class StatsView
         return _browseHost;
     }
 
-    ComboBox? _sortBox;
-    Button _pbBtn = null!;
+    /// <summary>Scenarios and runs show only these aim kinds (empty: all). Scenarios whose kind is unknown are hidden while a kind is chosen.</summary>
+    readonly HashSet<AimKind> _kinds = [];
+    /// <summary>Playlists show only these levels (empty: all).</summary>
+    readonly HashSet<PlaylistLevel> _levels = [];
+
+    bool KindMatches(string scenario) => _kinds.Count == 0 || RunSetInsights.KindOf(scenario) is { } k && _kinds.Contains(k);
+
     /// <summary>Sessions and runs show only personal bests.</summary>
     bool _pbOnly;
 
-    /// <summary>The PB filter exists only on the tabs of sessions and runs.</summary>
-    void ShowPbButton() => _pbBtn.Visibility = _browseTab is "Sessions" or "Runs" ? Visibility.Visible : Visibility.Collapsed;
+    /// <summary>Restores the tab, filters and sorts of the last run.</summary>
+    void LoadBrowseState(KovaaksCompanion.Core.UiState ui)
+    {
+        if (SortOptions.ContainsKey(ui.BrowseTab)) _browseTab = ui.BrowseTab;
+        foreach (var k in ui.BrowseKinds) if (Enum.TryParse<AimKind>(k, out var kind)) _kinds.Add(kind);
+        foreach (var l in ui.BrowseLevels) if (Enum.TryParse<PlaylistLevel>(l, out var level)) _levels.Add(level);
+        _favOnly = ui.BrowseFavOnly;
+        _pbOnly = ui.BrowsePbOnly;
+        foreach (var (tab, i) in ui.BrowseSorts)
+            if (SortOptions.TryGetValue(tab, out var o) && i >= 0 && i < o.Length) _sorts[tab] = i;
+    }
 
-    /// <summary>Shows the sort options of the chosen tab.</summary>
+    /// <summary>Writes the tab, filters and sorts to ui.json.</summary>
+    void SaveBrowseState()
+    {
+        var ui = _host.Ui;
+        ui.BrowseGoals = _goals.Order().ToArray();
+        ui.BrowseTab = _browseTab;
+        ui.BrowseKinds = _kinds.Select(k => k.ToString()).Order().ToArray();
+        ui.BrowseLevels = _levels.Select(l => l.ToString()).Order().ToArray();
+        ui.BrowseFavOnly = _favOnly;
+        ui.BrowsePbOnly = _pbOnly;
+        ui.BrowseSorts = new Dictionary<string, int>(_sorts);
+        _host.SaveUi();
+    }
+
+    ComboBox? _sortBox;
+
+    /// <summary>Shows the sort options of the chosen tab; the Stats tab has none, so no box.</summary>
     void FillSortBox()
     {
         if (_sortBox == null) return;
         _sortBox.Items.Clear();
         foreach (var o in SortOptions[_browseTab]) _sortBox.Items.Add(L.T(o));
         _sortBox.SelectedIndex = BrowseSort;
+        _sortBox.Visibility = SortOptions[_browseTab].Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    /// <summary>A playlist matches when at least half of its scenarios with a known kind are of the chosen kinds.</summary>
+    static bool PlaylistKindOk(int id, IReadOnlySet<AimKind> kinds)
+    {
+        if (kinds.Count == 0) return true;
+        var ks = PlaylistScenarios(id).Select(RunSetInsights.KindOf).OfType<AimKind>().ToList();
+        return ks.Count > 0 && ks.Count(x => kinds.Contains(x)) * 2 >= ks.Count;
+    }
+
+    static bool LevelOk(Benchmark b, Difficulty d, IReadOnlySet<PlaylistLevel> levels) =>
+        levels.Count == 0 || PlaylistLevels.Of(d.DifficultyName) is { } l && levels.Contains(l);
+
+    /// <summary>What the list of a tab depends on besides sort, favorites and PB, as cache key text.</summary>
+    string FilterKey(string tab) => tab switch
+    {
+        "Playlists" => string.Join(",", _kinds.Order()) + "|" + string.Join(",", _levels.Order()) + "|" + string.Join(",", _goals.Order()),
+        "Scenarios" => string.Join(",", _kinds.Order()) + "|" + string.Join(",", _goals.Order()),
+        "Runs" => string.Join(",", _kinds.Order()),
+        _ => "",
+    };
+
+    static readonly (PlaylistLevel Level, string Label)[] LevelTags = [(PlaylistLevel.Beginner, "Beginner"), (PlaylistLevel.Intermediate, "Intermediate"), (PlaylistLevel.Advanced, "Advanced")];
+    static readonly (AimKind Kind, string Label)[] KindTags = [(AimKind.Tracking, "Tracking"), (AimKind.Flick, "Flick"), (AimKind.Switching, "Switching")];
+
+    static readonly (string Key, string Label)[] GoalTags =
+    [
+        ("rank", "Rank up"), ("streak", "PB streak"), ("recent", "Played lately"), ("stale", "Not played lately"), ("new", "Never played"),
+    ];
+
+    /// <summary>The chosen goals: an item matches when any of them fits it (none chosen: every item).</summary>
+    HashSet<string> _goals = [];
+
+    /// <summary>Distinct weeks, of the last four, in which one of the scenarios got a personal best.</summary>
+    int PbWeeks(IEnumerable<string> scenarios)
+    {
+        var now = DateTime.Now;
+        return scenarios.SelectMany(n => _book.For(n).PersonalBests).Where(r => r.Time >= now.AddDays(-28)).Select(r => (int)((now - r.Time).TotalDays / 7)).Distinct().Count();
+    }
+
+    /// <summary>Whether an item with this last play, PB streak and tier state fits one of the chosen goals. An item already at its top tier (100%) never does.</summary>
+    bool GoalOk(DateTime? last, Func<int> pbWeeks, bool canRankUp, bool maxed)
+    {
+        if (_goals.Count == 0) return true;
+        if (maxed) return false; // nothing left to improve
+        var days = last is { } l ? (DateTime.Now - l).TotalDays : double.MaxValue;
+        foreach (var g in _goals)
+        {
+            var hit = g switch
+            {
+                "rank" => last != null && canRankUp,
+                "streak" => last != null && pbWeeks() > 0,
+                "recent" => days <= 14,
+                "stale" => last != null && days >= 30,
+                "new" => last == null,
+                _ => false,
+            };
+            if (hit) return true;
+        }
+        return false;
+    }
+
+    Border Tag(string label, bool on, Action click)
+    {
+        var text = new TextBlock { Text = L.T(label), Foreground = on ? (Brush)FindResource("Accent") : DimB, FontSize = 12.5, FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal };
+        var chip = new Border
+        {
+            Style = (Style)FindResource("Chip"), Cursor = Cursors.Hand, Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(0, 0, 6, 6), CornerRadius = new CornerRadius(8),
+            BorderThickness = new Thickness(1), BorderBrush = on ? (Brush)FindResource("Accent") : Solid("#14FFFFFF"), Child = text,
+        };
+        chip.MouseLeftButtonUp += (_, _) => click();
+        return chip;
+    }
+
+    static void Toggle<T>(HashSet<T> set, T item) { if (!set.Remove(item)) set.Add(item); }
+
+    /// <summary>Option rows of the chosen tab, as tags: filters toggle (several at once), the sort row picks one.</summary>
+    UIElement BrowseFilterPanel(string tab)
+    {
+        var host = new WrapPanel { Margin = new Thickness(TileGap / 2 + 8, 0, TileGap / 2, 2) };
+        // One flowing line of tags; a hairline divides one category from the next.
+        void Row(IEnumerable<Border> tags)
+        {
+            var list = tags.ToList();
+            if (list.Count == 0) return;
+            if (host.Children.Count > 0)
+                host.Children.Add(new Border { Width = 2, Height = 22, CornerRadius = new CornerRadius(1), Margin = new Thickness(6, 0, 12, 6), VerticalAlignment = VerticalAlignment.Center, Background = Solid("#59FFFFFF") });
+            foreach (var t in list) host.Children.Add(t);
+        }
+        if (tab == "Stats") return host;
+
+        if (tab == "Playlists")
+            Row(LevelTags.Select(t => { var l = t.Level; return Tag(t.Label, _levels.Contains(l), () => { Toggle(_levels, l); SaveBrowseState(); FillBrowse(); }); }));
+        if (tab is "Playlists" or "Scenarios" or "Runs")
+            Row(KindTags.Select(t => { var k = t.Kind; return Tag(t.Label, _kinds.Contains(k), () => { Toggle(_kinds, k); SaveBrowseState(); FillBrowse(); }); }));
+        if (tab is "Playlists" or "Scenarios")
+            Row(GoalTags.Select(t =>
+            {
+                var k = t.Key;
+                return Tag(t.Label, _goals.Contains(k), () =>
+                {
+                    Toggle(_goals, k);
+                    SaveBrowseState();
+                    FillBrowse();
+                });
+            }));
+        var flags = new List<Border> { Tag("Favorites", _favOnly, () => { _favOnly = !_favOnly; SaveBrowseState(); FillBrowse(); }) };
+        if (tab is "Sessions" or "Runs") flags.Add(Tag("PB", _pbOnly, () => { _pbOnly = !_pbOnly; SaveBrowseState(); FillBrowse(); }));
+        Row(flags);
+        return host;
     }
 
     /// <summary>Redraws the list of the chosen tab.</summary>
@@ -1360,7 +1484,7 @@ public partial class StatsView
     }
 
     /// <summary>Sorted rows per tab, sort and filter. Sorting reads tier bands and scores of every scenario, so a tab or sort change reuses the list until the data changes (<see cref="InvalidateBrowse"/>).</summary>
-    readonly Dictionary<(string Tab, int Sort, bool FavOnly, bool PbOnly), List<Func<UIElement>>> _browseCache = [];
+    readonly Dictionary<(string Tab, int Sort, bool FavOnly, bool PbOnly, string Filters), List<Func<UIElement>>> _browseCache = [];
 
     void InvalidateBrowse()
     {
@@ -1393,14 +1517,14 @@ public partial class StatsView
         var tab = _browseTab;
         var cols = BrowseColumns(tab, HomeHost.Width);
         _browseCols = cols;
-        var key = (tab, BrowseSort, _favOnly, _pbOnly);
+        var key = (tab, BrowseSort, _favOnly, _pbOnly, FilterKey(tab));
         if (!_browseCache.TryGetValue(key, out var items))
         {
             var memo = _sortMemo = new SortMemo();
             try
             {
                 _browseCache[key] = items = tab == "Playlists" ? SortedPlaylists().Select(x => (Func<UIElement>)(() => PlaylistCard(x.B, x.D, x.Fav))).ToList()
-                    : tab == "Scenarios" ? ScenarioRows() : tab == "Sessions" ? SessionRows() : RecordRows();
+                    : tab == "Scenarios" ? ScenarioRows() : tab == "Sessions" ? SessionRows() : tab == "Stats" ? [AccountStats] : RecordRows();
             }
             finally { _sortMemo = null; SaveSortCache(memo); }
         }
@@ -1417,12 +1541,22 @@ public partial class StatsView
             (_browseBar.Parent as Panel)?.Children.Remove(_browseBar);
             body.Children.Add(_browseBar);
         }
+        body.Children.Add(BrowseFilterPanel(tab));
         if (items.Count == 0) body.Children.Add(Text(L.T(_favOnly ? "No favorites" : tab == "Scenarios" ? "No scenarios" : tab == "Sessions" ? "No sessions" : "No runs"), 13, DimB, null, new Thickness(16, 12, 16, 12)));
         var grid = new UniformGrid { Columns = cols };
         _browseItems = items; _browseGrid = grid; _browseShown = 0;
         AppendBrowse(BrowseBatch);
         body.Children.Add(new Border { Padding = new Thickness(TileGap / 2 - 2, 0, TileGap / 2 - 2, 0), Child = grid });
         _browseHost.Child = Card(body, new Thickness(8, 4, 8, 4), CardGap);
+    }
+
+    /// <summary>The Stats tab: statistics over every run of the account (local runs and the plays the server lists), the last 30 days against all of them.</summary>
+    UIElement AccountStats()
+    {
+        var (plays, pbs) = BrowsePlays();
+        var recent = plays.Where(r => r.End >= DateTime.Now.AddDays(-30)).ToList();
+        (string, IReadOnlyList<RunRecord>)? focus = recent.Count > 0 && recent.Count < plays.Count ? (L.T("Last 30 days"), recent) : null;
+        return new Border { Margin = new Thickness(8, 0, 8, 8), Child = RunSetPanel(plays, pbs, focus, focus == null ? null : (L.T("All time"), plays), byKind: true, timeOfDay: true) };
     }
 
     /// <summary>Rows built per step; the rest of a long list is built while the page scrolls towards its end.</summary>
@@ -1518,17 +1652,14 @@ public partial class StatsView
             {
                 var s = _book.For(n);
                 double? pct = data.TryGetValue(n, out var t) ? TierProgress(t.Maxes, Math.Max(s.Best, t.Score)) : null;
-                var tier = BrowseSort is 2 or 3 ? TierKey(bandCache, n, s.Best) : NoTier;
+                var tier = BrowseSort == 1 ? TierKey(bandCache, n, s.Best) : NoTier;
                 return (N: n, S: s, Fav: ui.IsFavoriteScenario(n), Last: s.LastPlayed ?? DateTime.MinValue, Pct: pct, Tier: tier);
             })
-            .Where(i => !_favOnly || i.Fav);
+            .Where(i => (!_favOnly || i.Fav) && KindMatches(i.N) && GoalOk(i.S.LastPlayed, () => PbWeeks([i.N]), i.S.Best > 0 && i.Pct is < 1, i.S.Best > 0 && i.Pct is >= 1));
         var o = BrowseSort switch
         {
-            1 => q.OrderBy(i => i.Last == DateTime.MinValue ? DateTime.MaxValue : i.Last), // never played: last
-            2 => q.OrderByDescending(i => i.S.Best > 0 ? i.Tier.Ratio : -1).ThenByDescending(i => i.Tier.Progress), // never played: last
-            3 => q.OrderByDescending(i => i.S.Best > 0 && i.Tier.Ratio >= 0 ? i.Tier.Progress : -1).ThenByDescending(i => i.Last), // the % shown in the row; rows without one last
-            4 => q.OrderByDescending(i => i.S.Plays),
-            5 => q.OrderBy(i => i.N, StringComparer.OrdinalIgnoreCase),
+            1 => q.OrderByDescending(i => PercentKey(i.Pct)).ThenByDescending(i => i.Last), // the % shown in the row, closest to 100% first; 100% and rows without one last
+            2 => q.OrderByDescending(i => i.S.Plays),
             _ => q.OrderByDescending(i => i.Last).ThenByDescending(i => PercentKey(i.Pct)),
         };
         return o.Select(i => (Func<UIElement>)(() => ScenarioRow(i.N, i.S, i.Fav))).ToList();
@@ -1589,10 +1720,7 @@ public partial class StatsView
         var q = sessions.Select(s => (S: s, Fav: ui.IsFavoriteSession(s))).Where(i => (!_favOnly || i.Fav) && (!_pbOnly || i.S.PersonalBests > 0));
         var o = BrowseSort switch
         {
-            1 => q.OrderBy(i => i.S.Start),
-            2 => q.OrderByDescending(i => i.S.Duration),
-            3 => q.OrderByDescending(i => i.S.RunCount),
-            4 => q.OrderByDescending(i => i.S.PersonalBests).ThenByDescending(i => i.S.Start),
+            1 => q.OrderByDescending(i => i.S.Duration),
             _ => q.OrderByDescending(i => i.S.Start),
         };
         return o.Select(i => (Func<UIElement>)(() => SessionRow(i.S, i.Fav, rangeWidth))).ToList();
@@ -1651,13 +1779,11 @@ public partial class StatsView
         var bandCache = new Dictionary<string, TierSpan>(StringComparer.OrdinalIgnoreCase);
         var q = plays
             .Select(r => (R: r, Fav: ui.IsFavoriteRun(r.Scenario, r.End), Pct: data.TryGetValue(r.Scenario, out var t) ? (double?)TierProgress(t.Maxes, r.Score) : null,
-                Tier: BrowseSort is 2 or 3 ? TierKey(bandCache, r.Scenario, r.Score) : NoTier))
-            .Where(i => (!_favOnly || i.Fav) && (!_pbOnly || pbs.Contains(i.R)));
+                Tier: BrowseSort == 1 ? TierKey(bandCache, r.Scenario, r.Score) : NoTier))
+            .Where(i => (!_favOnly || i.Fav) && (!_pbOnly || pbs.Contains(i.R)) && KindMatches(i.R.Scenario));
         var o = BrowseSort switch
         {
-            1 => q.OrderBy(i => i.R.End),
-            2 => q.OrderByDescending(i => i.Tier.Ratio).ThenByDescending(i => i.Tier.Progress),
-            3 => q.OrderByDescending(i => i.Tier.Ratio >= 0 ? i.Tier.Progress : -1).ThenByDescending(i => i.R.End),
+            1 => q.OrderByDescending(i => i.Tier.Ratio >= 0 ? i.Tier.Progress : -1).ThenByDescending(i => i.R.End),
             _ => q.OrderByDescending(i => i.R.End).ThenByDescending(i => PercentKey(i.Pct)),
         };
         return o.Select(i => (Func<UIElement>)(() => RunRow(i.R, pbs.Contains(i.R), true))).ToList();

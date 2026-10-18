@@ -5,8 +5,8 @@ using System.Windows.Media;
 
 namespace KovaaksCompanion.App;
 
-/// <summary>One figure of the comparison: the run's running value and the average of all runs, per second, with the formats of its axis and tooltip.</summary>
-public sealed record CompareLine(string Name, Brush Brush, string AxisFormat, string TipFormat, bool IsScore, double[] Run, double[] Avg)
+/// <summary>One figure of the comparison: the run's running value, the average of all runs and (when another run beat it) the best run, per second, with the formats of its axis and tooltip.</summary>
+public sealed record CompareLine(string Name, Brush Brush, string AxisFormat, string TipFormat, bool IsScore, double[] Run, double[] Avg, double[]? Best = null)
 {
     public bool Percent => AxisFormat.EndsWith('%');
 }
@@ -50,7 +50,7 @@ public sealed class CompareChart : FrameworkElement
     /// <summary>A figure's axis: nice bounds around both of its curves, and the ticks between them.</summary>
     static (double Lo, double Hi, List<double> Ticks) Scale(CompareLine l)
     {
-        var all = l.Run.Concat(l.Avg).Where(v => !double.IsNaN(v)).ToList();
+        var all = l.Run.Concat(l.Avg).Concat(l.Best ?? []).Where(v => !double.IsNaN(v)).ToList();
         if (all.Count == 0) return (0, 1, [0, 1]);
         double dMin = all.Min(), dMax = all.Max();
         var pad = dMax - dMin < 1e-9 ? (l.Percent ? 0.05 : Math.Max(Math.Abs(dMax) * 0.1, 1)) : (dMax - dMin) * 0.06;
@@ -146,6 +146,12 @@ public sealed class CompareChart : FrameworkElement
             var avgPts = Enumerable.Range(0, n).Where(i => !double.IsNaN(l.Avg[i])).Select(i => new Point(X(i), Y(l, l.Avg[i]))).ToList();
             if (avgPts.Count > 1)
                 dc.DrawGeometry(null, new Pen(WithAlpha(l.Brush, 0.7), 1.5) { DashStyle = new DashStyle([4, 3], 0), LineJoin = PenLineJoin.Round }, ChartPaths.Monotone(avgPts));
+            if (l.Best is { } best)
+            {
+                var bestPts = Enumerable.Range(0, n).Where(i => !double.IsNaN(best[i])).Select(i => new Point(X(i), Y(l, best[i]))).ToList();
+                if (bestPts.Count > 1)
+                    dc.DrawGeometry(null, new Pen(WithAlpha(l.Brush, 0.9), 1.25) { DashStyle = new DashStyle([1, 3], 0), LineJoin = PenLineJoin.Round, StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }, ChartPaths.Monotone(bestPts));
+            }
             var runPts = Enumerable.Range(0, n).Where(i => !double.IsNaN(l.Run[i])).Select(i => new Point(X(i), Y(l, l.Run[i]))).ToList();
             if (runPts.Count < 2) continue;
             if (_lines.Count == 1)
@@ -207,7 +213,8 @@ public sealed class CompareChart : FrameworkElement
         var rows = new List<(Brush? Dot, FormattedText Name, FormattedText? Delta)> { (null, Text(Clock(_t[i]), 10, Res("Dim")), null) };
         foreach (var l in _lines)
         {
-            double run = l.Run[i], avg = l.Avg[i];
+            double run = l.Run[i], avg = l.Avg[i], top = l.Best?[i] ?? double.NaN;
+            if (!double.IsNaN(top)) dc.DrawEllipse(WithAlpha(l.Brush, 0.6), new Pen(Res("Bg"), 1), new Point(x, Y(l, top)), 3, 3);
             if (!double.IsNaN(avg)) dc.DrawEllipse(WithAlpha(l.Brush, 0.8), new Pen(Res("Bg"), 1), new Point(x, Y(l, avg)), 3.5, 3.5);
             if (!double.IsNaN(run)) dc.DrawEllipse(l.Brush, new Pen(Brushes.White, 1.5), new Point(x, Y(l, run)), 5, 5);
             string F(double v) => double.IsNaN(v) ? "–" : v.ToString(l.TipFormat, CultureInfo.InvariantCulture);
@@ -219,7 +226,7 @@ public sealed class CompareChart : FrameworkElement
                 var text = l.Percent ? $"{sign}{Math.Abs(d) * 100:0.0} pt" : $"{sign}{Math.Abs(d):0.#}";
                 delta = Text(text, 11, d >= 0 ? Res("Green") : Res("Red"), true);
             }
-            rows.Add((l.Brush, Text($"{l.Name}  {F(run)} / {F(avg)}", 11, Res("Fg")), delta));
+            rows.Add((l.Brush, Text($"{l.Name}  {F(run)} / {F(avg)}" + (l.Best is null ? "" : $" / {F(top)}"), 11, Res("Fg")), delta));
         }
         const double DeltaGap = 8;
         double bw = rows.Max(r => r.Name.Width + (r.Delta is null ? 0 : DeltaGap + r.Delta.Width) + (r.Dot is null ? 0 : 12)) + 16;

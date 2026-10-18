@@ -48,6 +48,8 @@ public partial class StatsView : UserControl
     {
         InitializeComponent();
         _host = host;
+        _goals = [.. host.Ui.BrowseGoals];
+        LoadBrowseState(host.Ui);
         Heading.Text = L.T("Loading…");
         host.ReplaySaved += OnReplaySaved;
         host.RunFinished += OnRunFinished;
@@ -149,6 +151,7 @@ public partial class StatsView : UserControl
         if (!_loaded) return;
         ShowStar();
         RefreshHome();
+        RefreshProfile();
     }
 
     void OnStarClick(object sender, RoutedEventArgs e)
@@ -173,6 +176,7 @@ public partial class StatsView : UserControl
         _host.SaveUi();
         ShowStar();
         RefreshHome();
+        RefreshProfile();
     }
 
     /// <summary>The difficulty shown for a benchmark: the remembered one, else the first favourite, else the first.</summary>
@@ -259,6 +263,18 @@ public partial class StatsView : UserControl
     int _sessionTok;
 
     /// <summary>Opens the session popup with the given session as an expanded card.</summary>
+    /// <summary>Opens the popup on the running game's session; false when it has no run yet.</summary>
+    public bool OpenLiveSession()
+    {
+        var plays = AllPlays();
+        PlaySession.RunSessionIds = RunSessionIds.AssignAll(_host.Settings.ArchiveDbFile, plays);
+        var pbs = PbSet();
+        var live = _host.Live.Find(PlaySession.Group(plays, all: plays, personalBests: pbs));
+        if (live == null || live.RunCount == 0) return false;
+        OpenSession(live, null);
+        return true;
+    }
+
     public void OpenSession(PlaySession s, Point? origin)
     {
         if (_sessionOpen) return;

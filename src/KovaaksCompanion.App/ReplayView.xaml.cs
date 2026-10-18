@@ -15,6 +15,7 @@ using KovaaksCompanion.Core.Library;
 using KovaaksCompanion.Core.Perf;
 using KovaaksCompanion.Core.Replays;
 using KovaaksCompanion.Core.Trajectory;
+using static KovaaksCompanion.App.StatBlocks;
 
 namespace KovaaksCompanion.App;
 
@@ -348,7 +349,6 @@ public partial class ReplayView : UserControl
 
     // ---- sidebar -----------------------------------------------------------------------------------------------
 
-    static string Dur(TimeSpan t) => t.TotalHours >= 1 ? L.F("{0}h {1}m", (int)t.TotalHours, t.Minutes) : L.F("{0}m {1}s", t.Minutes, t.Seconds);
 
     static string Ago(DateTime t)
     {
@@ -637,16 +637,20 @@ public partial class ReplayView : UserControl
         var bands = _d!.TierBands(_scenario);
         if (_stats.Plays == 0) { OverviewHost.Children.Add(EmptyCard(bands)); return; }
         var s = _stats;
-        var tilesRow = SummaryTiles(s, bands);
-        ((FrameworkElement)tilesRow).Margin = new Thickness(0, 0, -8, 4);
+        var tilesRow = SummaryTiles(s);
+        ((FrameworkElement)tilesRow).Margin = new Thickness(0, 0, -StatBlocks.Gap, -StatBlocks.Gap);
         OverviewHost.Children.Add(tilesRow);
+
+        _adviceHost = new Border();
+        OverviewHost.Children.Add(_adviceHost);
+        FillAdvice(s);
 
         var chartBody = ScoreChartBody();
         var points = s.Records.Select(r => (r.Time, r.Score)).ToList();
         _bigChart.Set(points, "0.#", ChartKind.Line, true, bands);
         SetChartLines(BuildLines(s.Records, _overviewSpeedsFor == _scenario ? _overviewSpeeds : null));
         SyncRange();
-        OverviewHost.Children.Add(new Border { Style = (Style)FindResource("SheetCard"), Padding = new Thickness(20, 16, 20, 14), Margin = new Thickness(0, 4, 0, 0), Child = chartBody });
+        OverviewHost.Children.Add(StatBlocks.CardBox(chartBody, StatBlocks.CardPad, StatBlocks.CardMargin));
 
         if (SensitivityCard(s) is { } sens) OverviewHost.Children.Add(sens);
         _speedHost = new Border();
@@ -655,122 +659,8 @@ public partial class ReplayView : UserControl
         _ = RefreshCloudAsync(_scenario);
     }
 
-    /// <summary>A card with an optional title; <paramref name="note"/> sits dimmed at the title's right end.</summary>
-    Border Section(string? title, UIElement body, Thickness margin, string? note = null)
-    {
-        var sp = new StackPanel();
-        if (title is not null)
-        {
-            var head = new Grid { Margin = new Thickness(4, 0, 4, 10) };
-            head.Children.Add(new TextBlock { Text = L.T(title), Foreground = FgB, FontSize = 15, FontWeight = FontWeights.SemiBold });
-            if (note is not null) head.Children.Add(new TextBlock { Text = note, Foreground = DimB, FontSize = 12, HorizontalAlignment = HorizontalAlignment.Right });
-            sp.Children.Add(head);
-        }
-        sp.Children.Add(body);
-        return new Border { Style = (Style)FindResource("SheetCard"), Padding = new Thickness(20, 16, 20, 14), Margin = margin, Child = sp };
-    }
-
-    /// <summary>A label column and one value column per head, with a hairline above each row.</summary>
-    UIElement Table(IReadOnlyList<string> heads, IReadOnlyList<(string Label, IReadOnlyList<(string Text, Brush? Tone)> Cells)> rows)
-    {
-        var g = new Grid();
-        g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.6, GridUnitType.Star) });
-        foreach (var _ in heads) g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        for (var r = 0; r <= rows.Count; r++) g.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        void Put(int row, int col, string text, Brush fg, double size, bool bold, bool right)
-        {
-            var t = new TextBlock
-            {
-                Text = text, Foreground = fg, FontSize = size, FontWeight = bold ? FontWeights.SemiBold : FontWeights.Normal, Margin = new Thickness(4, row == 0 ? 0 : 7, 4, 7),
-                HorizontalAlignment = right ? HorizontalAlignment.Right : HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center,
-            };
-            Grid.SetRow(t, row); Grid.SetColumn(t, col);
-            g.Children.Add(t);
-        }
-        if (heads.Any(h => h.Length > 0)) for (var c = 0; c < heads.Count; c++) Put(0, c + 1, heads[c], DimB, 11.5, false, true);
-        for (var r = 0; r < rows.Count; r++)
-        {
-            var line = new Border { BorderBrush = (Brush)FindResource("EdgeFaint"), BorderThickness = new Thickness(0, 1, 0, 0), IsHitTestVisible = false };
-            Grid.SetRow(line, r + 1); Grid.SetColumnSpan(line, heads.Count + 1);
-            g.Children.Add(line);
-            Put(r + 1, 0, rows[r].Label, DimB, 13, false, false);
-            for (var c = 0; c < rows[r].Cells.Count; c++) Put(r + 1, c + 1, rows[r].Cells[c].Text, rows[r].Cells[c].Tone ?? FgB, 13, true, true);
-        }
-        return g;
-    }
-
-    /// <summary>A thin bar filled to <paramref name="frac"/> of its width; an optional tick marks a second value.</summary>
-    static UIElement MeterBar(double frac, Brush fill, double height = 5, double? tick = null, Brush? tickBrush = null)
-    {
-        var g = new Grid { Height = height };
-        g.Children.Add(new Border { CornerRadius = new CornerRadius(height / 2), Background = Solid("#14FFFFFF") });
-        var inner = new Grid();
-        frac = double.IsNaN(frac) ? 0 : Math.Clamp(frac, 0, 1);
-        inner.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(frac, 1e-6), GridUnitType.Star) });
-        inner.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(1 - frac, 1e-6), GridUnitType.Star) });
-        inner.Children.Add(new Border { CornerRadius = new CornerRadius(height / 2), Background = fill });
-        g.Children.Add(inner);
-        if (tick is { } t)
-        {
-            t = double.IsNaN(t) ? 0 : Math.Clamp(t, 0, 1);
-            var m = new Grid();
-            m.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(t, 1e-6), GridUnitType.Star) });
-            m.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(1 - t, 1e-6), GridUnitType.Star) });
-            m.Children.Add(new Border { Width = 2, HorizontalAlignment = HorizontalAlignment.Right, Background = tickBrush ?? Brushes.White, Margin = new Thickness(0, -2, -1, -2) });
-            g.Children.Add(m);
-        }
-        return g;
-    }
-
-    /// <summary>The colour with less saturation and more lightness, same hue.</summary>
-    static Color Washed(Color c)
-    {
-        double r = c.R / 255.0, g = c.G / 255.0, b = c.B / 255.0;
-        double max = Math.Max(r, Math.Max(g, b)), min = Math.Min(r, Math.Min(g, b)), d = max - min;
-        var l = (max + min) / 2;
-        var sat = d == 0 ? 0 : d / (1 - Math.Abs(2 * l - 1));
-        var h = d == 0 ? 0 : max == r ? ((g - b) / d % 6 + 6) % 6 : max == g ? (b - r) / d + 2 : (r - g) / d + 4;
-        sat = Math.Min(1, sat * 0.9); l = 0.86;
-        var chroma = (1 - Math.Abs(2 * l - 1)) * sat;
-        var x = chroma * (1 - Math.Abs(h % 2 - 1));
-        var m = l - chroma / 2;
-        var (r1, g1, b1) = (int)h switch { 0 => (chroma, x, 0.0), 1 => (x, chroma, 0.0), 2 => (0.0, chroma, x), 3 => (0.0, x, chroma), 4 => (x, 0.0, chroma), _ => (chroma, 0.0, x) };
-        byte B(double v) => (byte)Math.Round(Math.Clamp(v + m, 0, 1) * 255);
-        return Color.FromRgb(B(r1), B(g1), B(b1));
-    }
-
-    /// <summary>The best bar with the average bar drawn over it, so the part past the average shows how far the best reaches. When both are the same only the best bar is drawn.</summary>
-    static UIElement OverlapBar(double avg, double best, Brush avgFill, Brush bestFill, double height = 6)
-    {
-        var g = new Grid { Height = height };
-        g.Children.Add(new Border { CornerRadius = new CornerRadius(height / 2), Background = Solid("#14FFFFFF") });
-        UIElement Fill(double frac, Brush b)
-        {
-            frac = double.IsNaN(frac) ? 0 : Math.Clamp(frac, 0, 1);
-            var inner = new Grid();
-            inner.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(frac, 1e-6), GridUnitType.Star) });
-            inner.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(1 - frac, 1e-6), GridUnitType.Star) });
-            inner.Children.Add(new Border { CornerRadius = new CornerRadius(height / 2), Background = b });
-            return inner;
-        }
-        g.Children.Add(Fill(best, bestFill));
-        if (Math.Abs(avg - best) > 1e-6) g.Children.Add(Fill(avg, avgFill));
-        return g;
-    }
-
-    /// <summary>Wraps a grid of cards: as many columns (up to <paramref name="max"/>) as fit at <paramref name="minCell"/> px each. The cards carry an 8 px right and bottom margin; the grid's own right margin takes the last one back.</summary>
-    static void Responsive(UniformGrid grid, int max, double minCell)
-    {
-        grid.Margin = new Thickness(0, 0, -8, 0);
-        grid.SizeChanged += (_, e) =>
-        {
-            var cols = Math.Clamp((int)(e.NewSize.Width / minCell), 1, Math.Max(1, max));
-            if (grid.Columns != cols) grid.Columns = cols;
-        };
-    }
-
     /// <summary>Plays, best, accuracy, time played and tier as one row of cards; the best is the score the stats page shows (local runs, cloud scores and the server's all-time best). The tier card shows the progress to the next tier in percent, or COMPLETE at the top tier.</summary>
-    UIElement SummaryTiles(ScenarioHistory s, List<ChartBand>? bands)
+    UIElement SummaryTiles(ScenarioHistory s)
     {
         var sum = ScenarioInsights.Summarize(s.Records);
         const string Dash = "–";
@@ -781,39 +671,27 @@ public partial class ReplayView : UserControl
             (L.T("Runs"), Big(sum?.Plays.ToString() ?? Dash)),
             (L.T("Best"), Big(BestScore > 0 ? BestScore.ToString("0.#") : Dash, TierOf(BestScore) is { } t ? ChartPaths.TextTone(t.Brush) : null)),
         };
-        if (bands is { Count: > 0 })
+        var runSet = RunSetInsights.Summarize(s.Runs, new HashSet<RunRecord>());
+        if (runSet != null)
         {
-            // The label says how far to the next tier (or COMPLETE at the top), the big text is the tier reached.
-            var cur = bands.LastOrDefault(b => b.Value <= BestScore);
-            var next = bands.FirstOrDefault(b => b.Value > BestScore);
-            var lo = cur?.Value ?? 0;
-            var frac = next is null ? 1 : Math.Clamp((BestScore - lo) / Math.Max(1e-9, next.Value - lo), 0, 1);
-            tiles.Add((next is null ? L.T("COMPLETE") : $"{Math.Floor(frac * 10000 + 1e-6) / 100:0.00}%", Big(cur?.Label ?? Dash, cur is null ? null : ChartPaths.TextTone(cur.Brush))));
+            if (s.PersonalBests.Count > 0) tiles.Add((L.T("PB"), Big($"{s.PersonalBests.Count}", (Brush)FindResource("Green"))));
+            tiles.Add((L.T("Accuracy"), Big(runSet.Accuracy is { } a ? a.ToString("P1") : Dash)));
+            tiles.Add((L.T("TTK"), Big(runSet.AvgTtk is { } ttk ? $"{ttk:0.00}s" : Dash)));
         }
         return TileRow(tiles);
     }
 
-    /// <summary>A row of stat cards (label over a big value), wrapping to as many columns as fit.</summary>
-    UIElement TileRow(List<(string Label, UIElement Content)> tiles)
-    {
-        var grid = new UniformGrid { Columns = tiles.Count };
-        Responsive(grid, tiles.Count, 124);
-        for (var i = 0; i < tiles.Count; i++)
-        {
-            var body = new StackPanel();
-            body.Children.Add(new TextBlock { Text = tiles[i].Label, Foreground = DimB, FontSize = 11.5, TextTrimming = TextTrimming.CharacterEllipsis });
-            body.Children.Add(tiles[i].Content);
-            grid.Children.Add(new Border
-            {
-                Style = (Style)FindResource("SheetCard"), Padding = new Thickness(14, 10, 14, 12), Child = body,
-                Margin = new Thickness(0, 0, 8, 8),
-            });
-        }
-        return grid;
-    }
+    Border? _adviceHost;
 
-    static TextBlock BigValue(string text, Brush fg, Brush? tone = null) =>
-        new() { Text = text, Foreground = tone ?? fg, FontSize = 22, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 4, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
+    /// <summary>Fills the advice card from the scenario's run statistics and, once they are read, its mouse-speed figures; the card stays empty when no rule has anything to say.</summary>
+    void FillAdvice(ScenarioHistory s)
+    {
+        if (_adviceHost is null) return;
+        var speeds = _overviewSpeedsFor == _scenario && _overviewSpeeds is { } o ? o.Select(x => (x.Score, x.Speed)).ToList() : null;
+        var advice = ScenarioAdvice.Build(s, speeds);
+        if (advice.Count == 0) { _adviceHost.Child = null; return; }
+        _adviceHost.Child = AdviceSection(advice, CardMargin);
+    }
 
     RunRecord? OpenRecord => _runMode && _runIdx >= 0 && _runIdx < _stats.Runs.Count ? _stats.Runs[_runIdx] : null;
 
@@ -848,17 +726,23 @@ public partial class ReplayView : UserControl
         void Row(string label, string? value, bool average = false, string? mean = null, Brush? tone = null) =>
             rows.Add((L.T(label), average ? [(value ?? Dash, tone), (mean ?? Dash, null)] : [(value ?? Dash, tone)]));
         string? Fmt(double? v, string format) => v?.ToString(format);
+        // Green when this run beats the average, red when it falls short; nothing when either is missing or equal.
+        Brush? Tone(double? v, double? mean, bool higherIsBetter = true) =>
+            v is { } x && mean is { } m && Math.Abs(x - m) > 1e-9 ? (Brush)FindResource((x > m) == higherIsBetter ? "Green" : "Red") : null;
 
         var rank = 1 + _stats.Records.Count(r => r.Score > rec.Score);
         Row("Played", L.Stamp(rec.Start));
         Row("Score", rec.Score.ToString("0.#"), true, _stats.Records.Count > 0 ? _stats.Records.Average(r => r.Score).ToString("0.#") : null, TierOf(rec.Score) is { } t ? ChartPaths.TextTone(t.Brush) : null);
         Row("Rank", $"{rank} / {_stats.Records.Count}");
-        Row("Accuracy", Fmt(rec.Accuracy, "P1"), true, Fmt(Mean(r => r.Accuracy), "P1"));
-        Row("Kills", rec.Kills?.ToString(), true, Fmt(Mean(r => r.Kills), "0.#"));
-        Row("TTK", rec.AvgTtk is { } ttk ? $"{ttk:0.00}s" : null, true, Mean(r => r.AvgTtk) is { } mt ? $"{mt:0.00}s" : null);
-        Row("Overshots", rec.OverShots?.ToString(), true, Fmt(Mean(r => r.OverShots), "0.#"));
-        Row("Reloads", rec.Reloads?.ToString(), true, Fmt(Mean(r => r.Reloads), "0.#"));
-        Row("Distance moved", Fmt(rec.Distance, "0.##"), true, Fmt(Mean(r => r.Distance), "0.##"));
+        Row("Accuracy", Fmt(rec.Accuracy, "P1"), true, Fmt(Mean(r => r.Accuracy), "P1"), Tone(rec.Accuracy, Mean(r => r.Accuracy)));
+        Row("Kills", rec.Kills?.ToString(), true, Fmt(Mean(r => r.Kills), "0.#"), Tone(rec.Kills, Mean(r => r.Kills)));
+        Row("TTK", rec.AvgTtk is { } ttk ? $"{ttk:0.00}s" : null, true, Mean(r => r.AvgTtk) is { } mt ? $"{mt:0.00}s" : null, Tone(rec.AvgTtk, Mean(r => r.AvgTtk), false));
+        Row("Overshots", rec.OverShots?.ToString(), true, Fmt(Mean(r => r.OverShots), "0.#"), Tone(rec.OverShots, Mean(r => r.OverShots), false));
+        var perKill = RunSetInsights.Summarize(runs, new HashSet<RunRecord>())?.OverShots;
+        Row("Overshots / kill", rec.OverShots.HasValue && rec.Kills is > 0 ? ((double)rec.OverShots.Value / rec.Kills.Value).ToString("0.00") : null, true, Fmt(perKill, "0.00"),
+            rec.OverShots.HasValue && rec.Kills is > 0 ? Tone((double)rec.OverShots.Value / rec.Kills.Value, perKill, false) : null);
+        Row("Reloads", rec.Reloads?.ToString(), true, Fmt(Mean(r => r.Reloads), "0.#"), Tone(rec.Reloads, Mean(r => r.Reloads), false));
+        Row("Distance moved", Fmt(rec.Distance, "0.##"), true, Fmt(Mean(r => r.Distance), "0.##"), Tone(rec.Distance, Mean(r => r.Distance)));
         Row("Sensitivity", rec.Cm360 is > 0 and var cm ? $"{cm:0.##} cm/360" : null);
         Row("Time", rec.Duration.Ticks > 0 ? Dur(rec.Duration) : null);
         // Two tables side by side, so the figures fit in one glance.
@@ -874,7 +758,7 @@ public partial class ReplayView : UserControl
         var divider = new Border { Width = 1, Margin = new Thickness(0, 4, 0, 4), HorizontalAlignment = HorizontalAlignment.Center, Background = (Brush)FindResource("EdgeFaint") };
         Grid.SetColumn(divider, 1);
         both.Children.Add(left); both.Children.Add(divider); both.Children.Add(right);
-        return Section(null, both, new Thickness(0, 0, 0, 4));
+        return Section(null, both, new Thickness(0));
     }
 
     /// <summary>Reads the mouse speed of the scenario's plays off the UI thread, then fills the open run's speed card (the run against the average of all plays) if that run is still open.</summary>
@@ -884,6 +768,7 @@ public partial class ReplayView : UserControl
         if (host != _runSpeedHost || !_runMode) return;
         var mine = all.Where(x => (x.End - rec.End).Duration() < ReplayStore.RunMatchTolerance).OrderBy(x => (x.End - rec.End).Duration()).Select(x => x.Speed).FirstOrDefault() ?? rec.Speed;
         if (mine is null) return;
+        mine = mine with { Cm360 = rec.Cm360 };
         var lines = new List<(Brush Brush, string Label, IReadOnlyList<RunSpeed> Runs)> { ((Brush)FindResource("Accent"), L.T("This run"), [mine]) };
         if (all.Count > 1)
         {
@@ -891,7 +776,7 @@ public partial class ReplayView : UserControl
             lines.Add(edges[0]);
             lines.Add(edges[2]);
         }
-        host.Child = SpeedCard(lines);
+        host.Child = SpeedCard(lines, KindOf(rec.Scenario, lines[0].Runs));
     }
 
     /// <summary>Score by the sensitivity (cm per 360) the local runs were played at: a row per sensitivity, and every run as a dot when more than one was used.</summary>
@@ -920,25 +805,15 @@ public partial class ReplayView : UserControl
             var tone = ScatterChart.GroupColors[gi % ScatterChart.GroupColors.Length];
             var full = new SolidColorBrush(tone);
             var washed = new SolidColorBrush(Washed(tone));
-            var head = new Grid { Margin = new Thickness(4, 8, 4, 5), Background = Brushes.Transparent, Cursor = Cursors.Hand };
-            head.MouseLeftButtonUp += (_, _) => ShowDpiEditor(head, RunsOf(g));
-            var label = new StackPanel { Orientation = Orientation.Horizontal };
-            label.Children.Add(new System.Windows.Shapes.Ellipse { Width = 8, Height = 8, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center, Fill = full });
-            label.Children.Add(new TextBlock { Text = $"{g.Cm360:0.##} cm/360", Foreground = DimB, FontSize = 13 });
-            head.Children.Add(label);
-            var right = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-            right.Children.Add(new TextBlock { Text = L.F("{0} runs", g.Runs), Foreground = DimB, FontSize = 11.5, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 14, 0) });
-            right.Children.Add(new TextBlock { Text = g.Average.ToString("0.#"), Foreground = washed, FontSize = 13, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
-            right.Children.Add(new TextBlock { Text = " / " + g.Best.ToString("0.#"), Foreground = full, FontSize = 13, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
-            head.Children.Add(right);
-            body.Children.Add(head);
             // The bar is the sensitivity's own colour (as in the scatter above); the average part is the same hue washed out and lighter.
             var same = string.Equals(g.Average.ToString("0.#"), g.Best.ToString("0.#"));
             var bar = OverlapBar(same ? Frac(g.Best) : Frac(g.Average), Frac(g.Best), same ? full : washed, full);
-            bar.SetValue(FrameworkElement.MarginProperty, new Thickness(4, 0, 4, 2));
-            body.Children.Add(bar);
+            FrameworkElement? row = null;
+            row = GroupRow(full, $"{g.Cm360:0.##} cm/360", L.F("{0} runs", g.Runs),
+                [(g.Average.ToString("0.#"), washed), (" / " + g.Best.ToString("0.#"), full)], bar, () => ShowDpiEditor(row!, RunsOf(g)));
+            body.Children.Add(row);
         }
-        return Section("Score by sensitivity", body, new Thickness(0, 12, 0, 0), L.T("Average") + " / " + L.T("Best"));
+        return Section("Score by sensitivity", body, CardMargin, L.T("Average") + " / " + L.T("Best"));
     }
 
     /// <summary>A small popup to correct the DPI of the runs played at one sensitivity (KovaaK's recorded a wrong one). Applies to every scenario's runs recorded with the same DPI and sensitivity.</summary>
@@ -1006,7 +881,9 @@ public partial class ReplayView : UserControl
             var read = await Task.Run(() => { var r = missing.AsParallel().Select(x => (x.Info.Id, Speed: cache.Get(archive, x.Info.Id))).ToList(); cache.Save(); return r; });
             foreach (var (id, speed) in read) _speeds[id] = speed;
         }
-        return plays.Select(x => (x.End, x.Score, Speed: x.Item != null ? _speeds.GetValueOrDefault(x.Item.Info.Id) : x.Cached)).Where(x => x.Speed != null).Select(x => (x.End, x.Score, x.Speed!)).ToList();
+        // The sensitivity of each play comes from its run record, so speeds can be shown in cm/s.
+        double? Cm360Of(DateTime end) => _stats.Runs.Where(r => (r.End - end).Duration() < ReplayStore.RunMatchTolerance).OrderBy(r => (r.End - end).Duration()).Select(r => r.Cm360).FirstOrDefault();
+        return plays.Select(x => (x.End, x.Score, Speed: x.Item != null ? _speeds.GetValueOrDefault(x.Item.Info.Id) : x.Cached)).Where(x => x.Speed != null).Select(x => (x.End, x.Score, x.Speed! with { Cm360 = Cm360Of(x.End) })).ToList();
     }
 
     /// <summary>Fills the mouse-speed card of the overview from every play of the scenario that has mouse data.</summary>
@@ -1014,10 +891,13 @@ public partial class ReplayView : UserControl
     {
         var runs = await ScenarioSpeedsAsync(scenario);
         if (host != _speedHost || scenario != _scenario || _runMode) return;
-        host.Child = runs.Count == 0 ? null : SpeedCard(TopAverageBottom(runs));
+        host.Child = runs.Count == 0 ? null : SpeedCard(TopAverageBottom(runs), KindOf(scenario, runs.Select(r => r.Speed).ToList()));
         _overviewSpeeds = runs; _overviewSpeedsFor = scenario;
+        FillAdvice(_stats);
         SetChartLines(BuildLines(_stats.Records, runs));
     }
+
+    static AimKind KindOf(string scenario, IReadOnlyList<RunSpeed> runs) => MouseSpeedStats.KindFromName(scenario) ?? MouseSpeedStats.KindFromRuns(runs);
 
     /// <summary>The lines of the overview's speed card: the top 5% of plays by score, all of them, and the bottom 5%.</summary>
     (Brush Brush, string Label, IReadOnlyList<RunSpeed> Runs)[] TopAverageBottom(IReadOnlyList<(DateTime End, double Score, RunSpeed Speed)> runs)
@@ -1030,140 +910,6 @@ public partial class ReplayView : UserControl
             ((Brush)FindResource("Accent"), L.T("Average"), ordered),
             ((Brush)FindResource("Red"), L.T("Bottom 5%"), ordered.TakeLast(k).ToList()),
         ];
-    }
-
-    /// <summary>
-    /// Mouse-speed figures as bars, one block per unit separated by lines (bars of a block share one scale). Each figure shows one bar per
-    /// line: the average figure of that line's plays.
-    /// </summary>
-    UIElement? SpeedCard(IReadOnlyList<(Brush Brush, string Label, IReadOnlyList<RunSpeed> Runs)> lines)
-    {
-        const string Speed = "{0:0}°/s", Ms = "{0:0} ms", Pct = "{0:0}%";
-        (string Label, Func<RunSpeed, double?> Get, string Format)[] speed =
-        [
-            ("Average speed", r => r.Mean, Speed), ("Max speed", r => r.Max, Speed),
-            ("Firing speed", r => r.FireSpeed, Speed), ("Non-firing speed", r => r.IdleSpeed, Speed), ("Peak flick speed", r => r.FlickPeak, Speed),
-        ];
-        (string Label, Func<RunSpeed, double?> Get, string Format)[] time =
-        [
-            ("Flick time", r => r.FlickTime * 1000, Ms), ("Reaction time", r => r.Reaction * 1000, Ms), ("Time between kills", r => r.KillInterval * 1000, Ms),
-        ];
-        (string Label, Func<RunSpeed, double?> Get, string Format)[] ratio =
-        [
-            ("Path efficiency", r => r.Efficiency * 100, Pct), ("Firing time", r => r.HoldRatio * 100, Pct), ("Speed variation", r => r.SpeedCv * 100, Pct),
-        ];
-        (string Label, Func<RunSpeed, double?> Get, string Format)[] other =
-        [
-            ("Flick distance", r => r.FlickDistance, "{0:0.0}°"), ("Direction changes", r => r.ReversalsPerSec, "{0:0.0}/s"), ("Jerk", r => r.Jerk / 1000, "{0:0.0} k°/s³"),
-        ];
-        string Show(double v, string format) => string.Format(System.Globalization.CultureInfo.InvariantCulture, format, v);
-
-        var host = new StackPanel();
-        var head = new Grid { Margin = new Thickness(0, 0, 0, 4) };
-        head.Children.Add(new TextBlock { Text = L.T("Mouse speed"), Foreground = FgB, FontSize = 15, FontWeight = FontWeights.SemiBold });
-        var legend = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
-        void Key(string text, Brush brush)
-        {
-            legend.Children.Add(new System.Windows.Shapes.Ellipse { Width = 8, Height = 8, Fill = brush, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(legend.Children.Count == 0 ? 0 : 12, 0, 5, 0) });
-            legend.Children.Add(new TextBlock { Text = text, Foreground = DimB, FontSize = 12 });
-        }
-        foreach (var line in lines) Key(line.Label, line.Brush);
-        head.Children.Add(legend);
-        host.Children.Add(head);
-
-        const double AxisT = 1.5, Tail = 132, TailY = 12, CapMin = 0.2, CapMax = 0.95, BarH = 8, Exaggerate = 2.5, SlotH = 13, RowPad = 6, LabelW = 124, NumW = 84;
-        (string Name, (string Label, Func<RunSpeed, double?> Get, string Format)[] Specs)[] groups =
-        [
-            ("General", [speed[0], speed[1], speed[2], speed[3], time[2], ratio[1], other[1]]),
-            ("Tracking", [ratio[2], other[2]]),
-            ("Flick", [speed[4], time[0], time[1], ratio[0], other[0]]),
-        ];
-
-        void Group(string name, (string Label, Func<RunSpeed, double?> Get, string Format)[] specs)
-        {
-            var rows = specs.Select(sp => (Spec: sp, Values: lines.Select(l => { var xs = l.Runs.Select(sp.Get).OfType<double>().ToList(); return xs.Count == 0 ? (double?)null : xs.Average(); }).ToList()))
-                .Where(x => x.Values.Any(v => v != null)).ToList();
-            if (rows.Count == 0) return;
-            host.Children.Add(new TextBlock { Text = L.T(name), Foreground = FgB, FontSize = 14, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, host.Children.Count > 1 ? 12 : 2, 0, 3) });
-            host.Children.Add(new Border { Height = 1, Background = Solid("#26FFFFFF"), Margin = new Thickness(0, 0, 0, 2) });
-
-            // Horizontal bars: one row per figure (label left, bars of the lines stacked), each row scaled to its own largest value.
-            var chart = new Grid();
-            chart.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(LabelW) });
-            chart.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(NumW) });
-            chart.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            for (var r = 0; r < rows.Count; r++) chart.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            chart.RowDefinitions.Add(new RowDefinition { Height = new GridLength(TailY) });
-            var axisColor = (Color)ColorConverter.ConvertFromString("#66FFFFFF");
-            var axisClear = Color.FromArgb(0, 255, 255, 255);
-            LinearGradientBrush Fade(Color from, Color to, bool horizontal) => new(from, to, horizontal ? 0 : 90);
-
-            for (var r = 0; r < rows.Count; r++)
-            {
-                var (spec, values) = rows[r];
-                // Length = (value / largest)^Exaggerate: a small gap shows a little, a big gap shows a lot, all bars of a row shift left together by the shortest one's share, so the longest sits at CapMin of the width for close values, gaps intact, and moves out to CapMax as the spread grows.
-                var hi = values.OfType<double>().DefaultIfEmpty(0).Max();
-                var lo = values.OfType<double>().DefaultIfEmpty(0).Min();
-                var low = hi > 0 ? Math.Pow(Math.Max(0, lo) / hi, Exaggerate) : 1;
-                var shift = 1 - (CapMin + (CapMax - CapMin) * (1 - low));
-                var label = new TextBlock { Text = L.T(spec.Label), Foreground = DimB, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, RowPad, 8, RowPad) };
-                Grid.SetRow(label, r);
-                chart.Children.Add(label);
-                // Row separator = an x axis: solid across the plot, a short fixed tail fading out to the left under the numbers.
-                var sep = new Border { Height = AxisT, Background = new SolidColorBrush(axisColor), VerticalAlignment = VerticalAlignment.Bottom };
-                Grid.SetRow(sep, r);
-                Grid.SetColumn(sep, 2);
-                chart.Children.Add(sep);
-                var sepTail = new Border { Height = AxisT, Width = Tail, Background = Fade(axisClear, axisColor, true), VerticalAlignment = VerticalAlignment.Bottom, HorizontalAlignment = HorizontalAlignment.Right };
-                Grid.SetRow(sepTail, r);
-                Grid.SetColumnSpan(sepTail, 2); // spans label + number columns so the tail is not clipped to the number column
-                chart.Children.Add(sepTail);
-
-                var nums = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, RowPad, 8, RowPad) };
-                var stack = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, RowPad, 0, RowPad) };
-                for (var i = 0; i < lines.Count; i++)
-                {
-                    if (values[i] is not { } y) continue;
-                    var frac = hi > 0 ? Math.Max(0.01, Math.Pow(Math.Max(0, y) / hi, Exaggerate) - shift) : 0;
-                    nums.Children.Add(new TextBlock { Text = Show(y, spec.Format), Foreground = FgB, FontSize = 12, Height = SlotH, TextAlignment = TextAlignment.Right, HorizontalAlignment = HorizontalAlignment.Right, LineStackingStrategy = LineStackingStrategy.BlockLineHeight, LineHeight = SlotH });
-                    var bar = new Grid { Height = SlotH };
-                    bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(frac, 0.0001), GridUnitType.Star) });
-                    bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(1 - frac, 0.0001), GridUnitType.Star) });
-                    bar.Children.Add(new Border { Height = BarH, Background = lines[i].Brush, CornerRadius = new CornerRadius(0, 2, 2, 0), MinWidth = 2, VerticalAlignment = VerticalAlignment.Center });
-                    stack.Children.Add(bar);
-                }
-                Grid.SetColumn(nums, 1);
-                Grid.SetRow(nums, r);
-                chart.Children.Add(nums);
-                Grid.SetColumn(stack, 2);
-                Grid.SetRow(stack, r);
-                chart.Children.Add(stack);
-            }
-            // Vertical guides at 25 / 50 / 75% of the bar length, behind the bars (added first so they draw underneath).
-            var guides = new Grid();
-            for (var c = 0; c < 4; c++)
-            {
-                guides.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                if (c == 0) continue;
-                var guide = new Border { Width = 1, Background = Solid("#17FFFFFF"), HorizontalAlignment = HorizontalAlignment.Left };
-                Grid.SetColumn(guide, c);
-                guides.Children.Add(guide);
-            }
-            Grid.SetColumn(guides, 2);
-            Grid.SetRowSpan(guides, rows.Count);
-            chart.Children.Insert(0, guides);
-            var yAxis = new Border { Width = AxisT, Background = new SolidColorBrush(axisColor), HorizontalAlignment = HorizontalAlignment.Left };
-            Grid.SetColumn(yAxis, 2);
-            Grid.SetRowSpan(yAxis, rows.Count);
-            chart.Children.Add(yAxis);
-            var yTail = new Border { Width = AxisT, Background = Fade(axisColor, axisClear, false), HorizontalAlignment = HorizontalAlignment.Left };
-            Grid.SetColumn(yTail, 2);
-            Grid.SetRow(yTail, rows.Count);
-            chart.Children.Add(yTail);
-            host.Children.Add(chart);
-        }
-        foreach (var (name, specs) in groups) Group(name, specs);
-        return new Border { Style = (Style)FindResource("SheetCard"), Padding = new Thickness(18, 12, 18, 2), Margin = new Thickness(0, 12, 0, 0), Child = host };
     }
 
     /// <summary>Brings the cloud scores up to date (older runs, other PCs) and rebuilds the sheet from the score book when they changed.</summary>
@@ -1189,11 +935,11 @@ public partial class ReplayView : UserControl
                 var chip = new StackPanel { Orientation = Orientation.Horizontal };
                 chip.Children.Add(new TextBlock { Text = b.Label, FontSize = 12.5, FontWeight = FontWeights.SemiBold, Foreground = ChartPaths.TextTone(b.Brush), Margin = new Thickness(0, 0, 8, 0) });
                 chip.Children.Add(new TextBlock { Text = b.Value.ToString("#,0.##"), FontSize = 12.5, Foreground = FgB });
-                wrap.Children.Add(new Border { CornerRadius = new CornerRadius(8), Background = Solid("#14FFFFFF"), Padding = new Thickness(10, 5, 10, 5), Margin = new Thickness(0, 0, 8, 8), Child = chip });
+                wrap.Children.Add(new Border { CornerRadius = new CornerRadius(8), Background = (Brush)FindResource("Card"), Padding = new Thickness(10, 5, 10, 5), Margin = new Thickness(0, 0, 8, 8), Child = chip });
             }
             sp.Children.Add(wrap);
         }
-        return new Border { Style = (Style)FindResource("SheetCard"), Padding = new Thickness(20, 18, 20, 14), Child = sp };
+        return StatBlocks.CardBox(sp);
     }
 
     // ---- stage: one run ----------------------------------------------------------------------------------------

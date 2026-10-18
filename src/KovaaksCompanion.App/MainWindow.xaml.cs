@@ -141,6 +141,14 @@ public partial class MainWindow : Window
         _replay.Show(_stats.SheetData(), scenario, o);
     }
 
+    /// <summary>Opens the session popup on the running game's session; false when it has no run yet.</summary>
+    public bool ShowLiveSession()
+    {
+        _settings.Close();
+        _replay.Close();
+        return _stats.OpenLiveSession();
+    }
+
     /// <summary>Opens the session popup on a play session overview.</summary>
     public void ShowSession(KovaaksCompanion.Core.Library.PlaySession session, Point? origin)
     {
