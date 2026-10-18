@@ -1636,7 +1636,7 @@ public partial class StatsView
     }
 
     /// <summary>The Zenless-style marks of a tier card: a faint diagonal hatch fading out to the right and a short accent bar inset on the left edge.</summary>
-    static void AddTierMarks(Panel panel, Color accent, double radius, double hatch = 0.09)
+    static void AddTierMarks(Panel panel, Color accent, double radius, double hatch = 0.09, bool bar = true)
     {
         var brush = new SolidColorBrush(accent);
         panel.Children.Insert(0, new Border
@@ -1650,7 +1650,7 @@ public partial class StatsView
             },
             OpacityMask = new LinearGradientBrush(Colors.White, Colors.Transparent, 0),
         });
-        panel.Children.Add(new Border { Width = 3, Margin = new Thickness(0, 12, 0, 12), HorizontalAlignment = HorizontalAlignment.Left, Background = brush, IsHitTestVisible = false });
+        if (bar) panel.Children.Add(new Border { Width = 3, Margin = new Thickness(0, 12, 0, 12), HorizontalAlignment = HorizontalAlignment.Left, Background = brush, IsHitTestVisible = false });
     }
 
     /// <summary>Rows built per step; the rest of a long list is built while the page scrolls towards its end.</summary>
@@ -1920,8 +1920,7 @@ public partial class StatsView
             var content = new Grid { Margin = new Thickness(0) };
             content.Children.Add(overlay);
             content.Children.Add(info);
-            AddTierMarks(content, c, 13, 0.07);
-            info.Margin = new Thickness(8, 0, 0, 0);
+            AddTierMarks(content, c, 13, 0.07, bar: false);
             card.Child = content;
             var dur = TimeSpan.FromMilliseconds(120);
             card.MouseEnter += (_, _) => overlay.Background.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation(Theme.Ink(Color.FromArgb(0x12, 255, 255, 255)), dur));
