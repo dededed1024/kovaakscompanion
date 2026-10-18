@@ -1005,7 +1005,7 @@ public partial class StatsView
         if (expanded && !capture && s.RunCount > 0)
         {
             var every = BrowsePlays().Plays;
-            rows.Children.Insert(0, new Border { Margin = new Thickness(0, 0, 0, 8), Child = RunSetPanel(s.Runs, pbs, (L.T("This session"), s.Runs), (L.T("All time"), every), byKind: true, advice: SessionAdvice.Build(s.Runs, every)) });
+            rows.Children.Add(new Border { Margin = new Thickness(0, 16, 0, 8), Child = RunSetPanel(s.Runs, pbs, (L.T("This session"), s.Runs), (L.T("All time"), every), byKind: true, advice: SessionAdvice.Build(s.Runs, every), speedByKind: true) });
         }
 
         var sep = new Border { Height = 1, Background = Solid("#14FFFFFF"), Margin = new Thickness(28, 0, 28, 4) };

@@ -23,7 +23,7 @@ public partial class StatsView
     /// The statistics panel of <paramref name="runs"/>: tiles, comparison, a chart of one figure over the runs, the scenarios, time of day, sensitivity and mouse speed.
     /// <paramref name="focus"/> is compared with <paramref name="against"/> (a session with every run; the last 30 days with every run); both may be null for no comparison.
     /// </summary>
-    UIElement RunSetPanel(IReadOnlyList<RunRecord> runs, IReadOnlySet<RunRecord> pbs, (string Label, IReadOnlyList<RunRecord> Runs)? focus, (string Label, IReadOnlyList<RunRecord> Runs)? against, bool byKind = false, bool timeOfDay = false, RunSetPart part = RunSetPart.All, IReadOnlyList<Advice>? advice = null, bool runChart = true)
+    UIElement RunSetPanel(IReadOnlyList<RunRecord> runs, IReadOnlySet<RunRecord> pbs, (string Label, IReadOnlyList<RunRecord> Runs)? focus, (string Label, IReadOnlyList<RunRecord> Runs)? against, bool byKind = false, bool timeOfDay = false, RunSetPart part = RunSetPart.All, IReadOnlyList<Advice>? advice = null, bool runChart = true, bool speedByKind = false)
     {
         var root = new StackPanel();
         var sum = RunSetInsights.Summarize(runs, pbs);
@@ -60,7 +60,7 @@ public partial class StatsView
             if (RunSetSensitivityChart(runs) is { } sensChart) root.Children.Add(sensChart);
             var speedHost = new Border();
             root.Children.Add(speedHost);
-            _ = FillRunSetSpeedAsync(speedHost, focus ?? ("", runs), against);
+            _ = FillRunSetSpeedAsync(speedHost, focus ?? ("", runs), against, speedByKind);
         }
         // The first element sits at the top of its parent: no gap above it.
         if (root.Children.Count > 0 && root.Children[0] is FrameworkElement first)
@@ -294,15 +294,22 @@ public partial class StatsView
         return result;
     }
 
-    async Task FillRunSetSpeedAsync(Border host, (string Label, IReadOnlyList<RunRecord> Runs) focus, (string Label, IReadOnlyList<RunRecord> Runs)? against)
+    async Task FillRunSetSpeedAsync(Border host, (string Label, IReadOnlyList<RunRecord> Runs) focus, (string Label, IReadOnlyList<RunRecord> Runs)? against, bool byKind)
     {
         try
         {
             var all = (await AllSpeedsAsync()).ToLookup(x => x.Scenario, x => (x.End, x.Speed), StringComparer.OrdinalIgnoreCase);
             var lines = new List<(Brush Brush, string Label, IReadOnlyList<RunSpeed> Runs)>();
             var mine = SpeedsOf(focus.Runs, all);
-            if (mine.Count > 0) lines.Add(((Brush)FindResource("Accent"), focus.Label.Length > 0 ? focus.Label : L.T("Average"), mine));
-            if (against is { } a && !ReferenceEquals(a.Runs, focus.Runs) && SpeedsOf(a.Runs, all) is { Count: > 0 } other) lines.Add(((Brush)FindResource("Red"), a.Label, other));
+            if (byKind)
+            {
+                // only the split by aim kind: one line per kind, no overall average and no comparison set
+                string[] colors = ["Accent", "Orange", "Purple"];
+                foreach (var g in focus.Runs.GroupBy(RunSetInsights.KindOf).OrderBy(g => g.Key))
+                    if (SpeedsOf(g, all) is { Count: > 0 } ofKind) lines.Add(((Brush)FindResource(colors[(int)g.Key % colors.Length]), g.Key.ToString(), ofKind));
+            }
+            else if (mine.Count > 0) lines.Add(((Brush)FindResource("Accent"), focus.Label.Length > 0 ? focus.Label : L.T("Average"), mine));
+            if (!byKind && against is { } a && !ReferenceEquals(a.Runs, focus.Runs) && SpeedsOf(a.Runs, all) is { Count: > 0 } other) lines.Add(((Brush)FindResource("Red"), a.Label, other));
             if (lines.Count > 0) host.Child = SpeedCard(lines);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Core.Diagnostics.ErrorReporter.Report("run set speed", e, Core.Diagnostics.ErrorSeverity.Low); }
