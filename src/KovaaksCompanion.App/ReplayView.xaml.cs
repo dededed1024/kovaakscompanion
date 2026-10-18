@@ -687,7 +687,7 @@ public partial class ReplayView : UserControl
     void FillAdvice(ScenarioHistory s)
     {
         if (_adviceHost is null) return;
-        var speeds = _overviewSpeedsFor == _scenario && _overviewSpeeds is { } o ? o.Select(x => (x.Score, x.Speed)).ToList() : null;
+        var speeds = _overviewSpeedsFor == _scenario && _overviewSpeeds is { } o ? o : null;
         var advice = ScenarioAdvice.Build(s, speeds);
         if (advice.Count == 0) { _adviceHost.Child = null; return; }
         _adviceHost.Child = AdviceSection(advice, CardMargin);
