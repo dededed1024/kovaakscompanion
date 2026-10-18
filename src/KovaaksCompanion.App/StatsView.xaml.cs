@@ -108,7 +108,7 @@ public partial class StatsView : UserControl
     /// <summary>Playlist page: up to 1200px wide, centred.</summary>
     void FitHost()
     {
-        Body.Width = Math.Max(0, Math.Min(1200, PlaylistScroll.ActualWidth - 14));
+        Body.Width = Math.Max(0, Math.Min(1200, PlaylistScroll.ActualWidth - 4));
     }
 
     const double HomeMaxWidth = 1100;
