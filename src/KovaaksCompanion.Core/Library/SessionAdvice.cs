@@ -12,7 +12,10 @@ public static class SessionAdvice
     const int MinCompared = 3;
     const int MinHalves = 8;
 
-    public static List<Advice> Build(IReadOnlyList<RunRecord> session, IReadOnlyList<RunRecord> all, int max = 5)
+    /// <summary>Runs a session needs before its spread over scenarios is judged.</summary>
+    const int MinSpread = 8;
+
+    public static List<Advice> Build(IReadOnlyList<RunRecord> session, IReadOnlyList<RunRecord> all, int max = 7)
     {
         var list = new List<Advice>();
         void Add(Advice? a) { if (a != null) list.Add(a); }
@@ -21,8 +24,10 @@ public static class SessionAdvice
         Add(Overall(rel));
         Add(ByScenario(rel));
         Add(Halves(rel));
-        Add(Accuracy(session, all));
+        Add(Accuracy(session, all, rel.Count >= MinCompared ? rel.Average(x => x.Rel) : null));
         Add(Overshooting(session, all));
+        Add(Spread(session));
+        Add(Streak(rel));
         return list.Take(max).ToList();
     }
 
@@ -69,11 +74,13 @@ public static class SessionAdvice
         return null;
     }
 
-    /// <summary>Accuracy this session against all time, both weighted by shots.</summary>
-    static Advice? Accuracy(IReadOnlyList<RunRecord> session, IReadOnlyList<RunRecord> all)
+    /// <summary>Accuracy this session against all time, both weighted by shots; read against the session's scores (<paramref name="score"/>, its mean relative score), since speed and accuracy trade off.</summary>
+    static Advice? Accuracy(IReadOnlyList<RunRecord> session, IReadOnlyList<RunRecord> all, double? score)
     {
         var none = new HashSet<RunRecord>();
         if (RunSetInsights.Summarize(session, none)?.Accuracy is not { } a || RunSetInsights.Summarize(all, none)?.Accuracy is not { } b) return null;
+        if (a - b <= -0.02 && score >= 0.02) return new Advice("Your accuracy this session is {0:P1}, below your usual {1:P1}, yet your scores are up. Trading a little precision for **speed** is paying off, so keep the pace as long as accuracy does not slip further.", [a, b]);
+        if (a - b >= 0.02 && score <= -0.02) return new Advice("Your accuracy this session is {0:P1}, above your usual {1:P1}, yet your scores are down. You are playing **too safe**, so let yourself take faster shots even if a few more miss.", [a, b]);
         if (a - b <= -0.02) return new Advice("Your accuracy this session is {0:P1}, below your usual {1:P1}. You are probably **rushing**, so ease off the speed until the hits come back.", [a, b]);
         if (a - b >= 0.02) return new Advice("Your accuracy this session is {0:P1}, above your usual {1:P1}. Clean hits are paying off, so you can start **pushing speed** a little.", [a, b]);
         return null;
@@ -85,5 +92,32 @@ public static class SessionAdvice
         var none = new HashSet<RunRecord>();
         if (RunSetInsights.Summarize(session, none)?.OverShots is not { } a || RunSetInsights.Summarize(all, none)?.OverShots is not { } b) return null;
         return a >= 0.2 && a - b >= 0.1 ? new Advice("You fired {0:0.00} shots per kill at targets already dead this session, against {1:0.00} usually. Tiredness or impatience often causes this, so **release the click** the moment a target breaks.", [a, b]) : null;
+    }
+
+    /// <summary>A session spread so thin that most scenarios got a single run.</summary>
+    static Advice? Spread(IReadOnlyList<RunRecord> session)
+    {
+        if (session.Count < MinSpread) return null;
+        var counts = session.GroupBy(r => r.Scenario, StringComparer.OrdinalIgnoreCase).Select(g => g.Count()).ToList();
+        var once = counts.Count(c => c == 1);
+        return counts.Count >= 4 && once >= counts.Count * 0.6 ? new Advice("{0} of the {1} scenarios this session got only one run. A single attempt mostly goes to getting used to the scenario, so play **fewer scenarios a few runs each**.", [once, counts.Count]) : null;
+    }
+
+    /// <summary>Runs of one scenario in a row that count as fresh; a longer streak's later runs are compared with them.</summary>
+    const int FreshRuns = 6;
+
+    /// <summary>The scenario with the longest streak of consecutive runs this session, when its runs past the fresh ones fell below them.</summary>
+    static Advice? Streak(List<(RunRecord Run, double Rel)> rel)
+    {
+        var streaks = new List<List<(RunRecord Run, double Rel)>>();
+        foreach (var x in rel)
+        {
+            if (streaks.Count == 0 || !string.Equals(streaks[^1][0].Run.Scenario, x.Run.Scenario, StringComparison.OrdinalIgnoreCase)) streaks.Add([]);
+            streaks[^1].Add(x);
+        }
+        var longest = streaks.MaxBy(s => s.Count);
+        if (longest is not { Count: >= FreshRuns + 3 }) return null;
+        var drop = longest.Skip(FreshRuns).Average(x => x.Rel) - longest.Take(FreshRuns).Average(x => x.Rel);
+        return drop <= -0.04 ? new Advice("You played {0} {1} times in a row, and the runs after the first {2} scored {3:0}% lower. Returns fade on a long streak, so **move on** to another scenario sooner and come back later.", [longest[0].Run.Scenario, longest.Count, FreshRuns, -drop * 100]) : null;
     }
 }
