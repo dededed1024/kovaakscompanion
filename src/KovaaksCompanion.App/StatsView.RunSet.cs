@@ -305,7 +305,8 @@ public partial class StatsView
             {
                 // only the split by aim kind: one line per kind, no overall average and no comparison set
                 string[] colors = ["Accent", "Orange", "Purple"];
-                foreach (var g in focus.Runs.GroupBy(RunSetInsights.KindOf).OrderBy(g => g.Key))
+                // runs whose kind is unknown have no line
+                foreach (var g in focus.Runs.Where(r => RunSetInsights.KindOf(r) != null).GroupBy(r => RunSetInsights.KindOf(r)!.Value).OrderBy(g => g.Key))
                     if (SpeedsOf(g, all) is { Count: > 0 } ofKind) lines.Add(((Brush)FindResource(colors[(int)g.Key % colors.Length]), g.Key.ToString(), ofKind));
             }
             else if (mine.Count > 0) lines.Add(((Brush)FindResource("Accent"), focus.Label.Length > 0 ? focus.Label : L.T("Average"), mine));
