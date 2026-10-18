@@ -12,12 +12,12 @@ public sealed record Difficulty(string DifficultyName, int KovaaksBenchmarkId, s
     public int ScenarioCount => Categories.Sum(c => c.Subcategories.Sum(s => s.ScenarioCount));
 }
 
-/// <summary>Tier names of one difficulty; evxl derives energy thresholds from the tier counts of the sibling difficulties.</summary>
+/// <summary>Tier names of one difficulty; some tier calculations derive energy thresholds from the tier counts of the sibling difficulties.</summary>
 public sealed record SiblingTiers(string Name, IReadOnlyList<string> Tiers);
 
 public sealed record ScenarioSelection(int BaseTierScoreCount, int? FullPoolTierScoreCount, int MinPerCategory, int MinPerSubcategory);
 
-/// <summary>Everything evxl's rank calculation reads from the playlist definition.</summary>
+/// <summary>Everything the tier calculation reads from the playlist definition.</summary>
 public sealed record TierSetup(string Method, string Difficulty, IReadOnlyList<string> Tiers, IReadOnlyList<SiblingTiers> Siblings, ScenarioSelection? Selection);
 
 public sealed record BenchmarkCategory(string CategoryName, string Color, IReadOnlyList<Subcategory> Subcategories);

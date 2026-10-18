@@ -18,17 +18,17 @@ public sealed record BenchmarkProgress(int OverallTier, IReadOnlyList<string> Ti
     public string OverallTierName => OverallTier > 0 ? TierName(OverallTier) : "";
     public IEnumerable<ScenarioProgress> Scenarios => Subcategories.SelectMany(s => s.Scenarios);
 
-    /// <summary>evxl's "Complete": every scenario is at or above the tier (lowest scenario rank), independent of the playlist's overall rank calculation.</summary>
+    /// <summary>"Complete": every scenario is at or above the tier (lowest scenario rank), independent of the playlist's overall rank calculation.</summary>
     public bool IsTierComplete(int tier)
     {
         var scenarios = Scenarios.ToList();
         return tier > 0 && tier <= Math.Max(TierNames.Count - 1, 0) && scenarios.Count > 0 && scenarios.All(s => s.Tier >= tier);
     }
 
-    /// <summary>Progress to the next overall tier using the playlist's evxl rank calculation.</summary>
+    /// <summary>Progress to the next overall tier using the playlist's tier calculation.</summary>
     public double OverallFraction => OverallTier >= Math.Max(TierNames.Count - 1, 0) ? 1 : OverallProgress;
 
-    /// <summary>Applies the playlist's evxl rank calculation (higher of the lowest scenario tier and the custom method).</summary>
+    /// <summary>Applies the playlist's tier calculation (higher of the lowest scenario tier and the custom method).</summary>
     BenchmarkProgress Recalculated(IReadOnlyList<SubcategoryProgress> subs)
     {
         if (TierNames.Count == 0) return this with { Subcategories = subs };
