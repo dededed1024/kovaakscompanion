@@ -1605,7 +1605,7 @@ public partial class StatsView
                 Child = new TextBlock { Text = rating.TopLabel.ToUpperInvariant(), FontSize = 18, FontWeight = FontWeights.Bold, Foreground = accentBrush },
             });
 
-        // ladder: opaque cells, each in its tier color; the next two tiers darken to the right as a gradient inside the cell, the rest are colorless and named "???"; the current one is outlined
+        // ladder: opaque cells, each in its tier color; the next two tiers darken to the right as a gradient inside the cell, the rest are colorless; the current one is outlined
         var at = AccountRating.Order.ToList().IndexOf(rating.Tier);
         var ladder = new UniformGrid { Rows = 1, Margin = new Thickness(0, 12, 0, 0), Width = 280, HorizontalAlignment = HorizontalAlignment.Right };
         var dark = Theme.Ink(Color.FromRgb(0x2C, 0x2C, 0x30));
@@ -1619,7 +1619,7 @@ public partial class StatsView
             var cell = new Border
             {
                 Height = 10, Margin = new Thickness(1.5, 0, 1.5, 0), CornerRadius = new CornerRadius(2),
-                ToolTip = hidden ? "???" : AccountRating.Requirement(AccountRating.Order[i]) is { Length: > 0 } req ? $"{AccountRating.Order[i]} / {req}" : AccountRating.Order[i],
+                ToolTip = AccountRating.Requirement(AccountRating.Order[i]) is { Length: > 0 } req ? $"{AccountRating.Order[i]} / {req}" : AccountRating.Order[i],
                 Background = hidden ? new SolidColorBrush(dark) : new LinearGradientBrush(Shade(tierColor, from), Shade(tierColor, to), 0),
             };
             if (i == at) { cell.BorderBrush = FgB; cell.BorderThickness = new Thickness(1.5); }
