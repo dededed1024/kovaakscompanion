@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     {
         _host = host;
         InitializeComponent();
+        if (KovaaksCompanion.Core.BuildConfig.DiscordInviteUrl.Length > 0) DiscordBtn.Visibility = Visibility.Visible;
         Popups.Reset();
         Backdrop.Apply(this);
         ApplyScale(host.Settings.UiScale);
@@ -100,6 +101,9 @@ public partial class MainWindow : Window
 
     /// <summary>Closes the topmost popup or overlay; false when nothing was open.</summary>
     bool GoBack() => Popups.CloseTop();
+
+    void OnDiscord(object sender, RoutedEventArgs e) =>
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(KovaaksCompanion.Core.BuildConfig.DiscordInviteUrl) { UseShellExecute = true })?.Dispose();
 
     void OnSearch(object sender, RoutedEventArgs e)
     {
