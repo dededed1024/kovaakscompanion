@@ -35,7 +35,7 @@ public partial class App : Application
         MiddleScroll.Register();
         DispatcherUnhandledException += (_, a) => Unhandled("ui thread", a.Exception);
         AppDomain.CurrentDomain.UnhandledException += (_, a) => Unhandled("unhandled", a.ExceptionObject as Exception);
-        TaskScheduler.UnobservedTaskException += (_, a) => Unhandled("background task", a.Exception);
+        TaskScheduler.UnobservedTaskException += (_, a) => { foreach (var inner in a.Exception.Flatten().InnerExceptions) Unhandled("background task", inner); };
         _single =new Mutex(true, @"Local\KovaaksCompanion.SingleInstance", out var first);
         if (!first)
         {

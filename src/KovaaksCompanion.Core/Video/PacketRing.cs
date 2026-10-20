@@ -33,6 +33,8 @@ public sealed class PacketRing : IDisposable
     readonly string _runId = Guid.NewGuid().ToString("N")[..8];
     Chunk? _open;
     int _nextChunk;
+    /// <summary>True from the first failed write (disk full) until a write works again, so one outage is reported once and its packets are dropped.</summary>
+    bool _writeFailed;
     bool _hasOrigin, _originFromCapture;
     int _arrivalSamples, _captureSamples;
     long _arrivalOriginNs = long.MaxValue, _captureOriginNs = long.MaxValue;
@@ -94,15 +96,34 @@ public sealed class PacketRing : IDisposable
                     if (++_arrivalSamples >= 30) _hasOrigin = true;
                 }
             }
-            if (p.IsVideo && p.Keyframe) StartChunk();
-            if (_open == null) return;
-            var w = _open.Writer!;
-            var off = w.Position;
-            w.Write(data);
-            _entries.Add(new Entry(p.IsVideo, p.Keyframe, dts, pts, data.Length, _open.Id, off, (long)p.CaptureNs));
-            _open.LastDtsSec = dts; _open.Entries++;
-            if (p.IsVideo) _lastVideoSec = dts;
+            try
+            {
+                if (p.IsVideo && p.Keyframe) StartChunk();
+                if (_open == null) return;
+                var w = _open.Writer!;
+                var off = w.Position;
+                w.Write(data);
+                _writeFailed = false;
+                _entries.Add(new Entry(p.IsVideo, p.Keyframe, dts, pts, data.Length, _open.Id, off, (long)p.CaptureNs));
+                _open.LastDtsSec = dts; _open.Entries++;
+                if (p.IsVideo) _lastVideoSec = dts;
+            }
+            catch (IOException e)
+            {
+                // disk full (or buffer folder gone): drop packets until the next keyframe can start a chunk again, and report the outage once
+                DropOpenChunk();
+                if (!_writeFailed) Diagnostics.ErrorReporter.Report("video buffer write", e, Diagnostics.ErrorSeverity.Medium);
+                _writeFailed = true;
+            }
         }
+    }
+
+    void DropOpenChunk()
+    {
+        if (_open == null) return;
+        try { _open.Writer?.Dispose(); } catch (IOException) { }
+        _open.Writer = null;
+        _open = null;
     }
 
     void StartChunk()

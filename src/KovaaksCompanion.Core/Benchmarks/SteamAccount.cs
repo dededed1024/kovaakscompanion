@@ -59,7 +59,7 @@ public static partial class SteamAccount
             registry("HKCU", @"Software\Valve\Steam", "SteamPath"),
             registry("HKLM", @"SOFTWARE\WOW6432Node\Valve\Steam", "InstallPath"),
         };
-        try { candidates.Add(new DirectoryInfo(kovaaksPath).Parent?.Parent?.Parent?.FullName); }
+        try { if (!string.IsNullOrWhiteSpace(kovaaksPath)) candidates.Add(new DirectoryInfo(kovaaksPath).Parent?.Parent?.Parent?.FullName); }
         catch (ArgumentException e) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("steam account", e, KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Low); }
         foreach (var c in candidates)
         {
