@@ -101,6 +101,7 @@
   <data name="Show tier on Home" xml:space="preserve"><value>홈에 티어 표시</value></data>
   <data name="Remove tier from Home" xml:space="preserve"><value>홈에서 티어 제거</value></data>
   <data name="Copy sharecode" xml:space="preserve"><value>공유 코드 복사</value></data>
+  <data name="Open on evxl.app" xml:space="preserve"><value>evxl.app에서 열기</value></data>
   <data name="Update available" xml:space="preserve"><value>새 버전이 있습니다</value></data>
   <data name="Later" xml:space="preserve"><value>나중에</value></data>
   <data name="Update" xml:space="preserve"><value>업데이트</value></data>

@@ -196,9 +196,16 @@ public partial class StatsView
         if (_code.Length > 0) KovaaksCompanion.Core.KovaaksLaunch.Open(KovaaksCompanion.Core.KovaaksLaunch.Playlist(_code));
     }
 
+    void OnOpenEvxlClick(object sender, RoutedEventArgs e)
+    {
+        if (_ctx is not { } c || _host.Settings.EffectiveSteamId is not { Length: > 0 } steam) return;
+        KovaaksCompanion.Core.KovaaksLaunch.Open(KovaaksCompanion.Core.KovaaksLaunch.Evxl(steam, c.Item.Bench.BenchmarkName, c.D.DifficultyName));
+    }
+
     void ShowPlaylist(double scroll)
     {
         if (_ctx is not { } c) return;
+        OpenEvxl.Visibility = _host.Settings.EffectiveSteamId.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         Heading.Text = c.Item.Title;
         ShowStar();
         ShowCode(c.D.Sharecode);

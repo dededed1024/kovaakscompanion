@@ -12,6 +12,10 @@ public static class KovaaksLaunch
 
     public static string Playlist(string code) => $"{Base}jump-to-playlist;sharecode={Uri.EscapeDataString(code)}";
 
+    /// <summary>The player's page for one playlist difficulty on evxl.app.</summary>
+    public static string Evxl(string steamId, string playlist, string difficulty) =>
+        $"https://evxl.app/u/{Uri.EscapeDataString(steamId)}/{Uri.EscapeDataString(playlist)}/{Uri.EscapeDataString(difficulty)}";
+
     /// <summary>Opens <paramref name="url"/> through the shell; failures are logged, never thrown.</summary>
     public static bool Open(string url)
     {
