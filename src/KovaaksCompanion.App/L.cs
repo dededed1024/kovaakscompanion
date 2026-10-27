@@ -12,29 +12,8 @@ public static class L
     static ResourceManager? _rm;
     static string _code = "en";
     static CultureInfo _culture = CultureInfo.InvariantCulture;
-    [ThreadStatic] static int _forceEnglish;
-    /// <summary>True inside an <see cref="English"/> scope.</summary>
-    public static bool Forced => _forceEnglish > 0;
-    public static string Code => _forceEnglish > 0 ? "en" : _code;
-    public static CultureInfo Culture => _forceEnglish > 0 ? CultureInfo.InvariantCulture : _culture;
-
-    sealed class EnglishScope : IDisposable
-    {
-        public void Dispose() => _forceEnglish--;
-    }
-
-    /// <summary>Until disposed, text lookups on this thread return the English source text and dates use US English, whatever language is selected (the profile card is always English).</summary>
-    public static IDisposable English(bool on = true)
-    {
-        if (on) _forceEnglish++;
-        return on ? new EnglishScope() : NoScope.Instance;
-    }
-
-    sealed class NoScope : IDisposable
-    {
-        public static readonly NoScope Instance = new();
-        public void Dispose() { }
-    }
+    public static string Code => _code;
+    public static CultureInfo Culture => _culture;
 
     /// <summary>Picks the language: a known code, or Windows' UI language when empty/unknown.</summary>
     public static void Set(string? code)
@@ -63,7 +42,7 @@ public static class L
 
     public static string T(string key)
     {
-        if (_rm == null || _forceEnglish > 0) return key;
+        if (_rm == null) return key;
         try { return _rm.GetString(key, CultureInfo.InvariantCulture) ?? key; }
         catch (MissingManifestResourceException) { return key; }
     }

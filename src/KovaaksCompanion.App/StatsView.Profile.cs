@@ -337,11 +337,6 @@ public partial class StatsView
 
     void FillProfile()
     {
-        using (L.English()) FillProfileCore();
-    }
-
-    void FillProfileCore()
-    {
         ProfileHost.Children.Clear();
         ProfileHost.ColumnDefinitions.Clear();
         _profileFits.Clear();
@@ -372,7 +367,7 @@ public partial class StatsView
             var stats = BuildPlayStats(runs, plays, 29, 17, FontWeights.SemiBold, ProfileInk, FontWeights.Normal);
             ((FrameworkElement)stats).Margin = new Thickness(0, 12, 4, 12);
             body.Children.Add(stats);
-            var cal = new ActivityCalendar { EnglishOnly = true, MaxCell = 42, MaxWeeks = 22, ShowLabels = false, Margin = new Thickness(4, 0, 4, 28) };
+            var cal = new ActivityCalendar { MaxCell = 42, MaxWeeks = 22, ShowLabels = false, Margin = new Thickness(4, 0, 4, 28) };
             cal.Light = ProfileLight;
             cal.Set(_book.PlaysPerDay, ProfileTone);
             cal.PbDays = _book.PersonalBestDays;

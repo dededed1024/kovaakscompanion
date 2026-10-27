@@ -1891,7 +1891,7 @@ public partial class StatsView
         diff.Opacity = 0.65;
         info.Children.Add(diff);
 
-        var chart = new ScoreChart { IsHitTestVisible = false, EnglishOnly = L.Forced, MiniLineDown = 12 };
+        var chart = new ScoreChart { IsHitTestVisible = false, MiniLineDown = 12 };
         // Not complete: the progress to the next tier as a whole number, truncated (never rounded up to 100).
         chart.SetMini(history.Select(h => (h.Day, h.Value)).ToList(), tier, watermark, complete, !complete && fraction is { } f ? $"{Math.Floor(Math.Clamp(f, 0, 1) * 10000 + 1e-6) / 100:0.00}" : null);
         if (cloudOf != null) _ = EnsureCloudAsync(cloudOf.Scenarios.Where(sc => sc.TierThresholds.Count > 0).Select(sc => sc.Scenario)); // a change redraws Home through the book
