@@ -364,7 +364,14 @@ public sealed class AppHost : IDisposable
         BuildTray();
         Autostart.Refresh(_settings.StartWithWindows);
         ProtocolHandler.Register();
-        _ = Task.Run(() => { var moved = MigrateReplays() | MoveVideosIntoSessions(); CacheReplays(); var cleaned = EnforceStorageLimits(); WriteWebFiles(); if (cleaned | IngestStats() | moved) RunFinished?.Invoke(); });
+        _ = Task.Run(() =>
+        {
+            bool moved = false, cleaned = false;
+            // the web files only name videos that exist, so they are written even when an earlier step failed
+            try { moved = MigrateReplays() | MoveVideosIntoSessions(); CacheReplays(); cleaned = EnforceStorageLimits(); }
+            finally { WriteWebFiles(); }
+            if (cleaned | IngestStats() | moved) RunFinished?.Invoke();
+        });
         _ = Task.Run(() => { try { _settings.OpenStore().BackupArchive(); } catch (IOException e) { AppLog.Write("archive", "backup failed: " + e.Message); } });
         if (showMain) ShowMain("Stats");
         _ = CheckWhatsNew();
@@ -637,7 +644,13 @@ public sealed class AppHost : IDisposable
             if (s.Grain != old.Grain) _app.Dispatcher.Invoke(() => _main?.ApplyGrain(s.Grain));
         }
         if (s.StorageLimitGb != old.StorageLimitGb || s.MaxAgeDays != old.MaxAgeDays)
-            _ = Task.Run(() => { CacheReplays(); var cleaned = EnforceStorageLimits(); WriteWebFiles(); if (cleaned) RunFinished?.Invoke(); });
+            _ = Task.Run(() =>
+            {
+                var cleaned = false;
+                try { CacheReplays(); cleaned = EnforceStorageLimits(); }
+                finally { WriteWebFiles(); }
+                if (cleaned) RunFinished?.Invoke();
+            });
     }
 
     public void Dispose()
