@@ -21,7 +21,9 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      # Windows PowerShell 5.1: the build runs scripts/fetch-*.ps1 through powershell.exe, which breaks under pwsh's PSModulePath.
       - name: Build
+        shell: powershell
         run: dotnet build KovaaksCompanion.slnx -c Release
 
       - name: Check tag matches the app version
@@ -32,6 +34,7 @@ jobs:
           if ("v$version" -ne '${{ github.ref_name }}') { throw "Tag ${{ github.ref_name }} does not match <Version> $version" }
 
       - name: Publish single-file exe
+        shell: powershell
         run: dotnet publish src/KovaaksCompanion.App -p:PublishProfile=Exe
 
       - uses: actions/upload-artifact@v4
