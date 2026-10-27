@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         KovaaK's Companion replay player
 // @namespace    kovaaks-companion
-// @version      __VERSION__
+// @version      15
 // @updateURL    __WEB_DIR__/replay-player.user.js
 // @downloadURL  __WEB_DIR__/replay-player.user.js
 // @description  Adds a video icon next to every scenario you have a recorded replay of and plays the clip in a popup over the page.
@@ -140,7 +140,7 @@
   // ---- run statistics: the file the app wrote for each replay (cache/<id>.cache in the picked folder), and what is drawn from it ----
 
   const COLOR = { accent: '#0a84ff', green: '#30d158', orange: '#ff9f0a', red: '#ff453a', purple: '#bf5af2', teal: '#64d2ff', yellow: '#ffd60a' };
-  const SPEED_COLOR = { mine: '#3d8bef', top: '#3fc06a', avg: '#3d8bef', bottom: '#ec5f58' }; // the speed card has many bars, so its colors are softer than the charts'
+  const SPEED_COLOR = { mine: '#5693e0', top: '#57b578', avg: '#5693e0', bottom: '#d6726c' }; // the speed card has many bars, so its colors are softer than the charts'
   const idKey = r => r.id.replace(/-/g, '').toLowerCase();
   const statsCache = new Map(); // replay id -> its statistics file, kept for as long as the page is open
   const cachedStats = async (folder, r) => { if (!statsCache.has(r.id)) statsCache.set(r.id, await statsOf(folder, r)); return statsCache.get(r.id); };
@@ -390,9 +390,10 @@
       const vals = group.map(r => speedValue(r[11], spec, r[RUN.cm])).filter(v => v != null);
       return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
     };
+    // top to bottom, so the line of a figure runs from the best plays through this run to the worst
     const lines = [{ name: 'This run', color: SPEED_COLOR.mine, get: spec => speedValue(own, spec, cm0) }];
     if (withSpeed.length > 1) {
-      lines.push({ name: 'Top 5%', color: SPEED_COLOR.top, get: mean0(withSpeed.slice(0, edge)) });
+      lines.unshift({ name: 'Top 5%', color: SPEED_COLOR.top, get: mean0(withSpeed.slice(0, edge)) });
       lines.push({ name: 'Bottom 5%', color: SPEED_COLOR.bottom, get: mean0(withSpeed.slice(-edge)) });
     }
     speedCard(el, replay.scenario, withSpeed, lines);
@@ -401,26 +402,28 @@
   function speedCard(el, scenario, withSpeed, lines) {
     const kind = aimKind(scenario, withSpeed.map(r => r[11]));
     const order = ['General', kind === 'Tracking' ? 'Tracking' : 'Flick', kind === 'Tracking' ? 'Flick' : 'Tracking'];
-    // The longest bar of a row is as long as the values differ: a row of near-equal figures gets short bars, and the gaps are stretched so they still show.
-    const bar = (v, vs) => {
-      const hi = Math.max(...vs), lo = Math.min(...vs);
-      if (!(hi > 0) || v == null) return 0;
-      const top = .5 + .5 * Math.min(1, (hi - lo) / hi / .4);
-      return Math.max(.04, top * (1 - Math.min(.9, 3 * (hi - v) / hi)));
+    // One bar per figure: each line (top, this run, bottom) fills its own thin strip from the left up to its value (the strips are stacked, so equal values do not hide each other), and the values sit at the right. The row's lowest and highest value take 70% of the bar's width, centered; when they are within 28% of the mean the bar covers the mean +-20% instead, so close values stay close together.
+    const line = (vals, spec) => {
+      const present = vals.filter(v => v != null), hi = Math.max(...present), lo = Math.min(...present);
+      const mean = present.reduce((a, b) => a + b, 0) / present.length, centre = (hi + lo) / 2, width = Math.max((hi - lo) / .7, .4 * Math.abs(mean));
+      const x = v => width ? Math.min(97, Math.max(3, 50 + (v - centre) / width * 100)) : 50; // percent of the bar's width
+      const fills = vals.map((v, i) => v == null ? '<i></i>' : `<i style="width:${x(v)}%;background:${lines[i].color}"></i>`).join('');
+      const nums = vals.map((v, i) => `<b style="color:${v == null ? 'inherit' : lines[i].color}">${v == null ? '' : num(v, spec[3]) + spec[4]}</b>`).join('');
+      return `<div class="sv"><div class="trk">${fills}</div><div class="nums" style="grid-template-columns:repeat(${vals.length},72px)">${nums}</div></div>`;
     };
     let html = `<div class="ctitle">${T('Mouse speed')}<span class="legend">${lines.map(l => `<span><i style="background:${l.color}"></i>${T(l.name)}</span>`).join('')}</span></div>`;
+    const parts = [];
     for (const group of order) {
       let body = '';
       for (const spec of SPEED[group]) {
         const vals = lines.map(l => l.get(spec));
         if (vals.every(v => v == null)) continue;
-        const present = vals.filter(v => v != null);
-        body += `<div class="sl">${T(spec[0])}</div><div class="sv">${lines.map((l, i) => vals[i] == null ? '' :
-          `<div class="sr"><b style="color:${l.color}">${num(vals[i], spec[3])}${spec[4]}</b><div class="sbar"><i style="width:${(bar(vals[i], present) * 100).toFixed(1)}%;background:${l.color}"></i></div></div>`).join('')}</div>`;
+        body += `<div class="sl">${T(spec[0])}</div>${line(vals, spec)}`;
       }
-      if (body) html += `<div class="sg">${T(group)}</div><div class="sgrid">${body}</div>`;
+      if (body) parts.push(`<div class="sg">${T(group)}</div><div class="sgrid">${body}</div>`);
     }
-    el.innerHTML = html;
+    // two columns: the general figures on the left, the other groups under each other on the right
+    el.innerHTML = html + `<div class="scols"><div>${parts[0] || ''}</div><div>${parts.slice(1).join('')}</div></div>`;
     el.hidden = false;
   }
 
@@ -849,7 +852,7 @@
     root.innerHTML = `
       <style>
         .scrim{position:absolute;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;font:13px var(--font)}
-        .card{max-height:100%;overflow-y:auto;scrollbar-width:thin;--dim:color-mix(in srgb,var(--fg) 60%,var(--bg));--hover:color-mix(in srgb,var(--fg) 10%,var(--bg));--on:color-mix(in srgb,#0a84ff 24%,var(--bg));width:min(1180px,100%);background:var(--bg);color:var(--fg);border:1px solid color-mix(in srgb,var(--fg) 14%,var(--bg));border-radius:12px;padding:8px 10px 10px;box-shadow:0 20px 60px #0009}
+        .card{max-height:100%;overflow-y:auto;scrollbar-width:thin;--dim:color-mix(in srgb,var(--fg) 60%,var(--bg));--hover:color-mix(in srgb,var(--fg) 10%,var(--bg));--on:color-mix(in srgb,#0a84ff 24%,var(--bg));width:min(1600px,100%);background:var(--bg);color:var(--fg);border:1px solid color-mix(in srgb,var(--fg) 14%,var(--bg));border-radius:12px;padding:8px 10px 10px;box-shadow:0 20px 60px #0009}
         .bar{display:flex;gap:8px;align-items:center;padding-bottom:6px}
         .bar b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
         .bar span{color:var(--dim);font-size:12px}
@@ -891,12 +894,16 @@
         .tip{position:absolute;top:4px;background:var(--bg);border:1px solid color-mix(in srgb,var(--fg) 20%,var(--bg));border-radius:8px;padding:6px 8px;font-size:12px;pointer-events:none;box-shadow:0 4px 14px #0006;white-space:nowrap;z-index:1}
         .none{color:var(--dim)}
         .sg{font-weight:600;margin:10px 0 3px}
-        .sgrid{display:grid;grid-template-columns:150px 1fr;gap:4px 12px;align-items:center}
-        .sl{color:var(--dim)}
-        .sr{display:grid;grid-template-columns:104px 1fr;align-items:center;gap:8px;line-height:15px}
-        .sr b{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;font-size:12px}
-        .sbar{height:8px;border-radius:4px;background:color-mix(in srgb,var(--fg) 8%,var(--bg))}
-        .sbar i{display:block;height:100%;border-radius:4px}
+        .scols{display:grid;grid-template-columns:1fr 1fr;gap:0 28px;align-items:start}
+        .scols>div{min-width:0}
+        @media (max-width:900px){.scols{grid-template-columns:1fr}}
+        .sgrid{display:grid;grid-template-columns:112px 1fr;gap:0 10px;align-items:center;--line:color-mix(in srgb,var(--fg) 12%,var(--bg))}
+        .sl{color:var(--dim);border-bottom:1px solid var(--line);min-height:30px;display:flex;align-items:center;font-size:12px}
+        .sv{display:flex;align-items:center;gap:10px;height:30px;border-bottom:1px solid var(--line)}
+        .trk{flex:1;min-width:60px;display:flex;flex-direction:column;gap:2px;background:color-mix(in srgb,var(--fg) 8%,var(--bg))}
+        .trk i{display:block;height:5px;border-radius:0 3px 3px 0}
+        .nums{display:grid}
+        .nums b{text-align:right;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
         .statbtn{padding:2px 6px;font-weight:600;color:var(--fg)}
         .statbtn::before{content:'\\25B8';display:inline-block;width:14px;transition:transform .15s}
         .statbtn.open::before{transform:rotate(90deg)}

@@ -626,7 +626,7 @@ public sealed class AppHost : IDisposable
     /// <summary>Rewrites the files the browser userscript plays replays from (see <see cref="ReplayWebFiles"/>); they only name videos that exist now.</summary>
     void WriteWebFiles()
     {
-        try { ReplayWebFiles.Write(_settings.OpenReplays(), ReplayWebFiles.FolderOf(_settings), _settings.DataRoot, _settings.OpenStore().ArchivedRuns(), LoadPbBook(), L.Tables(), App.CurrentVersion); }
+        try { ReplayWebFiles.Write(_settings.OpenReplays(), ReplayWebFiles.FolderOf(_settings), _settings.DataRoot, _settings.OpenStore().ArchivedRuns(), LoadPbBook(), L.Tables()); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { AppLog.Write("web", "writing the browser player files failed: " + e.Message); }
     }
 
