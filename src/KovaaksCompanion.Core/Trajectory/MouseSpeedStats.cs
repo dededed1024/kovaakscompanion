@@ -53,7 +53,9 @@ public static class MouseSpeedStats
     {
         var s = data.Samples;
         if (data.Raw == null || s.Count < 2) return s;
-        var n = (int)Math.Floor((s[^1].TSec - s[0].TSec) * AnalysisHz) + 1;
+        var span = s[^1].TSec - s[0].TSec;
+        if (!(span > 0)) return s; // timestamps that do not run forward (or are not numbers) cannot be resampled
+        var n = (int)Math.Floor(span * AnalysisHz) + 1;
         var res = new CameraSample[n];
         for (var i = 0; i < n; i++)
         {
