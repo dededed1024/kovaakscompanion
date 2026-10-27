@@ -245,19 +245,19 @@ static class StatBlocks
     internal static TextBlock BigValue(string text, Brush fg, Brush? tone = null) =>
         new() { Text = text, Foreground = tone ?? fg, FontSize = 22, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 4, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
 
-    /// <summary>The brush's color with a quarter of it mixed toward grey, so it stays recognisable but is easier on the eyes.</summary>
+    /// <summary>The brush's color with 40% of grey mixed in, so it stays recognisable but is easier on the eyes.</summary>
     static Brush Soft(Brush b)
     {
         if (b is not SolidColorBrush { Color: var c }) return b;
-        byte Mix(byte v) => (byte)Math.Round(v * 0.75 + 128 * 0.25);
+        byte Mix(byte v) => (byte)Math.Round(v * 0.6 + 128 * 0.4);
         var soft = new SolidColorBrush(Color.FromRgb(Mix(c.R), Mix(c.G), Mix(c.B)));
         soft.Freeze();
         return soft;
     }
 
     /// <summary>
-    /// Mouse-speed figures as bars, one block per unit separated by lines (bars of a block share one scale). Each figure shows one bar per
-    /// line: the average figure of that line's plays.
+    /// Mouse-speed figures, one row per figure: a bar with one tick per line at the average figure of that line's plays, and the figures beside it
+    /// (a row covers its own mean +-40%).
     /// </summary>
     internal static UIElement? SpeedCard(IReadOnlyList<(Brush Brush, string Label, IReadOnlyList<RunSpeed> Runs)> lines, AimKind? kind = null)
     {
@@ -295,7 +295,21 @@ static class StatBlocks
         head.Children.Add(legend);
         host.Children.Add(head);
 
-        const double AxisT = 1.5, Tail = 132, TailY = 12, CapMin = 0.2, CapMax = 0.95, BarH = 8, Exaggerate = 2.5, SlotH = 13, RowPad = 6, LabelW = 124, NumW = 84;
+        const double LabelW = 112, MinBarW = 60, NumW = 72, ColGap = 28, StripH = 5, StripGap = 2, RowH = 30;
+        // One bar per figure: each line fills its own thin strip from the left up to its figure (the strips are stacked, so equal figures do not hide each other). The row's lowest and highest figure take 70% of the bar's width, centered; when they are within 28% of the mean the bar covers the mean +-20% instead, so close figures stay close together.
+        void DrawBar(Canvas c, IReadOnlyList<double?> values)
+        {
+            c.Children.Clear();
+            var present = values.OfType<double>().ToList();
+            if (c.ActualWidth <= 0 || present.Count == 0) return;
+            double w = c.ActualWidth, hi = present.Max(), lo = present.Min(), centre = (hi + lo) / 2, span = Math.Max((hi - lo) / 0.7, 0.4 * Math.Abs(present.Average()));
+            double X(double v) => w * (span > 0 ? Math.Clamp(0.5 + (v - centre) / span, 0.03, 0.97) : 0.5);
+            var fills = new StackPanel { Width = w };
+            for (var i = 0; i < values.Count; i++)
+                fills.Children.Add(new Border { Width = values[i] is { } v ? X(v) : 0, Height = StripH, HorizontalAlignment = HorizontalAlignment.Left, CornerRadius = new CornerRadius(0, 3, 3, 0), Background = lines[i].Brush, Margin = new Thickness(0, i == 0 ? 0 : StripGap, 0, 0) });
+            Canvas.SetTop(fills, (RowH - (values.Count * StripH + (values.Count - 1) * StripGap)) / 2);
+            c.Children.Add(fills);
+        }
         (string Name, (string Label, Func<RunSpeed, double?> Get, string Format)[] Specs)[] groups =
         [
             ("General", [speed[0], speed[1], speed[2], speed[3], time[2], ratio[1], other[1]]),
@@ -306,90 +320,57 @@ static class StatBlocks
         var own = kind switch { AimKind.Tracking => "Tracking", AimKind.Flick or AimKind.Switching => "Flick", _ => null };
         if (own != null) groups = [groups[0], .. groups.Skip(1).OrderBy(g => g.Name == own ? 0 : 1)];
 
-        void Group(string name, (string Label, Func<RunSpeed, double?> Get, string Format)[] specs)
+        // Two columns: the general figures on the left, the other groups under each other on the right.
+        var cols = new Grid();
+        cols.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        cols.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(ColGap) });
+        cols.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var left = new StackPanel();
+        var right = new StackPanel();
+        Grid.SetColumn(right, 2);
+        cols.Children.Add(left);
+        cols.Children.Add(right);
+        host.Children.Add(cols);
+
+        void Group(StackPanel col, string name, (string Label, Func<RunSpeed, double?> Get, string Format)[] specs)
         {
             var rows = specs.Select(sp => (Spec: sp, Values: lines.Select(l => { var xs = l.Runs.Select(sp.Get).OfType<double>().ToList(); return xs.Count == 0 ? (double?)null : xs.Average(); }).ToList()))
                 .Where(x => x.Values.Any(v => v != null)).ToList();
             if (rows.Count == 0) return;
-            host.Children.Add(new TextBlock { Text = L.T(name), Foreground = FgB, FontSize = 14, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, host.Children.Count > 1 ? 12 : 2, 0, 3) });
-            host.Children.Add(new Border { Height = 1, Background = Solid("#26FFFFFF"), Margin = new Thickness(0, 0, 0, 2) });
+            col.Children.Add(new TextBlock { Text = L.T(name), Foreground = FgB, FontSize = 14, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, col.Children.Count > 0 ? 12 : 2, 0, 3) });
+            col.Children.Add(new Border { Height = 1, Background = Solid("#26FFFFFF"), Margin = new Thickness(0, 0, 0, 2) });
 
-            // Horizontal bars: one row per figure (label left, bars of the lines stacked), each row scaled to its own largest value.
+            // One row per figure: its label, the bar and the figures of the lines (one column each, in the colors of the lines).
             var chart = new Grid();
             chart.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(LabelW) });
-            chart.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(NumW) });
-            chart.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            chart.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MinWidth = MinBarW });
+            chart.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(NumW * lines.Count + 8) });
             for (var r = 0; r < rows.Count; r++) chart.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            chart.RowDefinitions.Add(new RowDefinition { Height = new GridLength(TailY) });
-            var axisColor = (Color)ColorConverter.ConvertFromString("#66FFFFFF");
-            var axisClear = Color.FromArgb(0, 255, 255, 255);
-            LinearGradientBrush Fade(Color from, Color to, bool horizontal) => new(from, to, horizontal ? 0 : 90);
-
             for (var r = 0; r < rows.Count; r++)
             {
                 var (spec, values) = rows[r];
-                // Length = (value / largest)^Exaggerate: a small gap shows a little, a big gap shows a lot, all bars of a row shift left together by the shortest one's share, so the longest sits at CapMin of the width for close values, gaps intact, and moves out to CapMax as the spread grows.
-                var hi = values.OfType<double>().DefaultIfEmpty(0).Max();
-                var lo = values.OfType<double>().DefaultIfEmpty(0).Min();
-                var low = hi > 0 ? Math.Pow(Math.Max(0, lo) / hi, Exaggerate) : 1;
-                var shift = 1 - (CapMin + (CapMax - CapMin) * (1 - low));
-                var label = new TextBlock { Text = L.T(spec.Label), Foreground = DimB, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, RowPad, 8, RowPad) };
+                var label = new TextBlock { Text = L.T(spec.Label), Foreground = DimB, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0), MinHeight = RowH };
                 Grid.SetRow(label, r);
                 chart.Children.Add(label);
-                // Row separator = an x axis: solid across the plot, a short fixed tail fading out to the left under the numbers.
-                var sep = new Border { Height = AxisT, Background = new SolidColorBrush(axisColor), VerticalAlignment = VerticalAlignment.Bottom };
-                Grid.SetRow(sep, r);
-                Grid.SetColumn(sep, 2);
-                chart.Children.Add(sep);
-                var sepTail = new Border { Height = AxisT, Width = Tail, Background = Fade(axisClear, axisColor, true), VerticalAlignment = VerticalAlignment.Bottom, HorizontalAlignment = HorizontalAlignment.Right };
-                Grid.SetRow(sepTail, r);
-                Grid.SetColumnSpan(sepTail, 2); // spans label + number columns so the tail is not clipped to the number column
-                chart.Children.Add(sepTail);
-
-                var nums = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, RowPad, 8, RowPad) };
-                var stack = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, RowPad, 0, RowPad) };
+                var bar = new Canvas { Height = RowH };
+                bar.SizeChanged += (_, _) => DrawBar(bar, values);
+                Grid.SetColumn(bar, 1);
+                Grid.SetRow(bar, r);
+                chart.Children.Add(bar);
+                var nums = new UniformGrid { Columns = lines.Count, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
                 for (var i = 0; i < lines.Count; i++)
-                {
-                    if (values[i] is not { } y) continue;
-                    var frac = hi > 0 ? Math.Max(0.01, Math.Pow(Math.Max(0, y) / hi, Exaggerate) - shift) : 0;
-                    nums.Children.Add(new TextBlock { Text = Show(y, spec.Format), Foreground = FgB, FontSize = 12, Height = SlotH, TextAlignment = TextAlignment.Right, HorizontalAlignment = HorizontalAlignment.Right, LineStackingStrategy = LineStackingStrategy.BlockLineHeight, LineHeight = SlotH });
-                    var bar = new Grid { Height = SlotH };
-                    bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(frac, 0.0001), GridUnitType.Star) });
-                    bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(1 - frac, 0.0001), GridUnitType.Star) });
-                    bar.Children.Add(new Border { Height = BarH, Background = lines[i].Brush, CornerRadius = new CornerRadius(0, 2, 2, 0), MinWidth = 2, VerticalAlignment = VerticalAlignment.Center });
-                    stack.Children.Add(bar);
-                }
-                Grid.SetColumn(nums, 1);
+                    nums.Children.Add(new TextBlock { Text = values[i] is { } y ? Show(y, spec.Format) : "", Foreground = lines[i].Brush, FontSize = 12, FontWeight = FontWeights.SemiBold, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center });
+                Grid.SetColumn(nums, 2);
                 Grid.SetRow(nums, r);
                 chart.Children.Add(nums);
-                Grid.SetColumn(stack, 2);
-                Grid.SetRow(stack, r);
-                chart.Children.Add(stack);
+                var sep = new Border { Height = 1, Background = Solid("#26FFFFFF"), VerticalAlignment = VerticalAlignment.Bottom };
+                Grid.SetRow(sep, r);
+                Grid.SetColumnSpan(sep, 3);
+                chart.Children.Add(sep);
             }
-            // Vertical guides at 25 / 50 / 75% of the bar length, behind the bars (added first so they draw underneath).
-            var guides = new Grid();
-            for (var c = 0; c < 4; c++)
-            {
-                guides.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                if (c == 0) continue;
-                var guide = new Border { Width = 1, Background = Solid("#17FFFFFF"), HorizontalAlignment = HorizontalAlignment.Left };
-                Grid.SetColumn(guide, c);
-                guides.Children.Add(guide);
-            }
-            Grid.SetColumn(guides, 2);
-            Grid.SetRowSpan(guides, rows.Count);
-            chart.Children.Insert(0, guides);
-            var yAxis = new Border { Width = AxisT, Background = new SolidColorBrush(axisColor), HorizontalAlignment = HorizontalAlignment.Left };
-            Grid.SetColumn(yAxis, 2);
-            Grid.SetRowSpan(yAxis, rows.Count);
-            chart.Children.Add(yAxis);
-            var yTail = new Border { Width = AxisT, Background = Fade(axisColor, axisClear, false), HorizontalAlignment = HorizontalAlignment.Left };
-            Grid.SetColumn(yTail, 2);
-            Grid.SetRow(yTail, rows.Count);
-            chart.Children.Add(yTail);
-            host.Children.Add(chart);
+            col.Children.Add(chart);
         }
-        foreach (var (name, specs) in groups) Group(name, specs);
+        for (var g = 0; g < groups.Length; g++) Group(g == 0 ? left : right, groups[g].Name, groups[g].Specs);
         return CardBox(host, new Thickness(CardPad.Left, CardPad.Top, CardPad.Right, 8), CardMargin);
     }
 

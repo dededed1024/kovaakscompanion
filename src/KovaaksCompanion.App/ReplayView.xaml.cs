@@ -779,14 +779,12 @@ public partial class ReplayView : UserControl
         var mine = all.Where(x => (x.End - rec.End).Duration() < ReplayStore.RunMatchTolerance).OrderBy(x => (x.End - rec.End).Duration()).Select(x => x.Speed).FirstOrDefault() ?? rec.Speed;
         if (mine is null) return;
         mine = mine with { Cm360 = rec.Cm360 };
-        var lines = new List<(Brush Brush, string Label, IReadOnlyList<RunSpeed> Runs)> { ((Brush)FindResource("Accent"), L.T("This run"), [mine]) };
-        if (all.Count > 1)
-        {
-            var edges = TopAverageBottom(all);
-            lines.Add(edges[0]);
-            lines.Add(edges[2]);
-        }
-        host.Child = SpeedCard(lines, KindOf(rec.Scenario, lines[0].Runs));
+        var lines = new List<(Brush Brush, string Label, IReadOnlyList<RunSpeed> Runs)>();
+        var edges = all.Count > 1 ? TopAverageBottom(all) : null; // top to bottom, so the line of a figure runs from the best plays through this run to the worst
+        if (edges != null) lines.Add(edges[0]);
+        lines.Add(((Brush)FindResource("Accent"), L.T("This run"), [mine]));
+        if (edges != null) lines.Add(edges[2]);
+        host.Child = SpeedCard(lines, KindOf(rec.Scenario, [mine]));
     }
 
     /// <summary>Score by the sensitivity (cm per 360) the local runs were played at: a row per sensitivity, and every run as a dot when more than one was used.</summary>
