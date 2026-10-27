@@ -1,0 +1,53 @@
+name: Release
+
+# Builds the single-file exe on GitHub's runners. A v* tag push also attaches the exe to that
+# tag's GitHub release (created if missing, otherwise the exe replaces the existing asset).
+# Run it by hand (workflow_dispatch) to check that the build works without releasing.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build KovaaksCompanion.slnx -c Release
+
+      - name: Check tag matches the app version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $version = ([xml](Get-Content src/KovaaksCompanion.App/KovaaksCompanion.App.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          if ("v$version" -ne '${{ github.ref_name }}') { throw "Tag ${{ github.ref_name }} does not match <Version> $version" }
+
+      - name: Publish single-file exe
+        run: dotnet publish src/KovaaksCompanion.App -p:PublishProfile=Exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KovaaksCompanion
+          path: publish/KovaaksCompanion.exe
+
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view '${{ github.ref_name }}' *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload '${{ github.ref_name }}' publish/KovaaksCompanion.exe --clobber
+          } else {
+            gh release create '${{ github.ref_name }}' publish/KovaaksCompanion.exe --title '${{ github.ref_name }}' --generate-notes
+          }
