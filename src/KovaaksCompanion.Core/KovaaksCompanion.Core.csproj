@@ -21,6 +21,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Benchmarks/playlists.json" LogicalName="playlists.json" />
     <EmbeddedResource Include="Benchmarks/tier-data.json" LogicalName="tier-data.json" />
+    <EmbeddedResource Include="Web/replay-player.user.js" LogicalName="replay-player.user.js" />
   </ItemGroup>
 
 </Project>

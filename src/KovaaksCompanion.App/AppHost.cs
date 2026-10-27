@@ -10,6 +10,7 @@ using KovaaksCompanion.Core.Replays;
 using KovaaksCompanion.Core.Update;
 using KovaaksCompanion.Core.Video;
 using KovaaksCompanion.Core.Video.Obs;
+using KovaaksCompanion.Core.Web;
 using WinForms = System.Windows.Forms;
 
 namespace KovaaksCompanion.App;
@@ -65,6 +66,9 @@ public sealed class AppHost : IDisposable
     readonly bool _settingsDirty;
 
     public AppSettings Settings => _settings;
+    ReplayWebServer? _web;
+    /// <summary>True while the browser userscript server is listening.</summary>
+    public bool WebPlayerRunning => _web is not null;
     /// <summary>True while the game window is being recorded.</summary>
     public bool GameActive => _video?.IsRecording == true;
     /// <summary>The replays: info and data in the archive, videos in the videos folder.</summary>
@@ -357,6 +361,7 @@ public sealed class AppHost : IDisposable
         };
 
         StartWatcher();
+        SyncWebPlayer();
 
         BuildTray();
         Autostart.Refresh(_settings.StartWithWindows);
@@ -586,6 +591,17 @@ public sealed class AppHost : IDisposable
         foreach (var b in blocked) SetError("access denied: " + b);
     }
 
+    /// <summary>Starts or stops the userscript server to match the setting; the token is created on first use.</summary>
+    void SyncWebPlayer()
+    {
+        if (_settings.WebPlayer && _web is null)
+        {
+            if (_settings.WebPlayerToken.Length == 0) { _settings = _settings with { WebPlayerToken = ReplayWebServer.NewToken() }; SaveSettings(); }
+            _web = ReplayWebServer.TryStart(() => _settings.OpenReplays(), _settings.WebPlayerToken);
+        }
+        else if (!_settings.WebPlayer && _web is not null) { _web.Dispose(); _web = null; }
+    }
+
     public void ApplySettings(AppSettings s)
     {
         var old = _settings;
@@ -593,6 +609,7 @@ public sealed class AppHost : IDisposable
         AppLog.FilePath = s.LogFile;
         SaveSettings();
         PreflightAccess();
+        SyncWebPlayer();
         var customChanged = s.Theme == "Custom" && (s.CustomHue != old.CustomHue || s.CustomSaturation != old.CustomSaturation || s.CustomBrightness != old.CustomBrightness);
         if (s.Language != old.Language || s.Theme != old.Theme || customChanged)
         {
@@ -617,6 +634,7 @@ public sealed class AppHost : IDisposable
         _tray?.Dispose();
         _trayIcon?.Dispose();
         _watcher?.Dispose();
+        _web?.Dispose();
         _capture?.Dispose();
         _video?.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(8));
         BufferCleaner.Clean(_settings.BufferFolder); // chunks are junk once we exit; if libobs hung, files it still holds are skipped and the next start removes them

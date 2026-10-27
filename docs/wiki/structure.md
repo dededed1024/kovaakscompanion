@@ -21,6 +21,7 @@ docs/                      specs and this wiki
 - `Perf/`: reading the game's per-run performance files.
 - `Replays/`: saving, storing and listing replays; stats-folder watching; storage cleanup.
 - `Video/`: game process and window detection, recording, buffering, encoding, webcam overlay.
+- `Web/`: opt-in loopback server and userscript that play replays on benchmark websites (token-protected, read-only).
 - `Update/`: update check and self-update from GitHub Releases.
 - `Migration/`: import of data from older storage layouts.
 - `Diagnostics/`: logging and error reporting.
