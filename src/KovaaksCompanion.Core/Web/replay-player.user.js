@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         KovaaK's Companion replay player
 // @namespace    kovaaks-companion
-// @version      16
+// @version      17
 // @updateURL    __WEB_DIR__/replay-player.user.js
 // @downloadURL  __WEB_DIR__/replay-player.user.js
 // @description  Adds a video icon next to every scenario you have a recorded replay of and plays the clip in a popup over the page.
@@ -45,9 +45,9 @@
     for (const list of byScenario.values()) list.sort((a, b) => b.score - a.score);
   }
 
-  // The row a scenario name is in, found without site class names: the icons (svg, img, icon fonts) to the right of the name, each taken as the
+  // The row a scenario name is in, found without site class names: the icons (svg, img, icon fonts, Iconify masks) to the right of the name, each taken as the
   // largest element around it that holds no other icon. Returns those elements, nothing when the name has no row of icons.
-  const ICON = 'svg, img, i';
+  const ICON = 'svg, img, i, .iconify';
   function rowItems(n) {
     const range = document.createRange();
     range.selectNodeContents(n);
