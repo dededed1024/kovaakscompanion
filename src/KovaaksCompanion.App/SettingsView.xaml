@@ -290,13 +290,33 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{app:Loc 'Start with KovaaK\'s'}" Foreground="{DynamicResource Fg}" VerticalAlignment="Center" Margin="4,0,0,0" Cursor="Hand" Background="Transparent" MouseLeftButtonUp="OnLaunchWithGameLabel"/>
+                                        <CheckBox Grid.Column="1" x:Name="LaunchWithGame" Style="{StaticResource Switch}" HorizontalAlignment="Right" VerticalAlignment="Center" Checked="OnLaunchWithGame" Unchecked="OnLaunchWithGame"/>
+                                    </Grid>
+                                    <Grid Margin="0,10,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{app:Loc 'Exit with KovaaK\'s'}" Foreground="{DynamicResource Fg}" VerticalAlignment="Center" Margin="4,0,0,0" Cursor="Hand" Background="Transparent" MouseLeftButtonUp="OnExitWithGameLabel"/>
+                                        <CheckBox Grid.Column="1" x:Name="ExitWithGame" Style="{StaticResource Switch}" HorizontalAlignment="Right" VerticalAlignment="Center" Checked="OnCommit" Unchecked="OnCommit"/>
+                                    </Grid>
+                                    <Grid Margin="0,10,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{app:Loc 'Show in system tray'}" Foreground="{DynamicResource Fg}" VerticalAlignment="Center" Margin="4,0,0,0" Cursor="Hand" Background="Transparent" MouseLeftButtonUp="OnTrayLabel"/>
+                                        <CheckBox Grid.Column="1" x:Name="ShowTray" Style="{StaticResource Switch}" HorizontalAlignment="Right" VerticalAlignment="Center" Checked="OnCommit" Unchecked="OnCommit"/>
+                                    </Grid>
+                                    <Grid Margin="0,10,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
                                         <TextBlock Text="{app:Loc 'Update automatically'}" Foreground="{DynamicResource Fg}" VerticalAlignment="Center" Margin="4,0,0,0" Cursor="Hand" Background="Transparent" MouseLeftButtonUp="OnAutoUpdateLabel"/>
                                         <CheckBox Grid.Column="1" x:Name="AutoUpdate" Style="{StaticResource Switch}" HorizontalAlignment="Right" VerticalAlignment="Center" Checked="OnCommit" Unchecked="OnCommit"/>
                                     </Grid>
-                                    <StackPanel Margin="0,16,0,0" HorizontalAlignment="Right">
-                                        <Button x:Name="CheckBtn" Content="{app:Loc 'Check for updates'}" HorizontalAlignment="Right" Click="OnCheckUpdate"/>
-                                        <Button x:Name="ReportOpenBtn" Content="{app:Loc 'Send feedback'}" HorizontalAlignment="Right" Margin="0,8,0,0" Tag="https://github.com/dededed1024/KovaaksCompanion/issues/new" Click="OnIconLink"/>
-                                    </StackPanel>
                                 </StackPanel>
                             </Grid>
                                 </StackPanel>

@@ -364,6 +364,11 @@ public sealed class AppHost : IDisposable
         BuildTray();
         Autostart.Refresh(_settings.StartWithWindows);
         ProtocolHandler.Register();
+        if (_settings.LaunchWithGame && Environment.ProcessPath is { } exePath)
+        {
+            var s = _settings;
+            _ = Task.Run(() => SteamLaunchOption.Refresh(s.KovaaksPath, s.EffectiveSteamId, exePath, Autostart.TrayArg));
+        }
         _ = Task.Run(() =>
         {
             bool moved = false, cleaned = false;
@@ -529,7 +534,7 @@ public sealed class AppHost : IDisposable
 
         _tray = new WinForms.NotifyIcon
         {
-            Icon = _trayIcon = LoadTrayIcon(), Text = "KovaaK's Companion", Visible = true, ContextMenuStrip = menu,
+            Icon = _trayIcon = LoadTrayIcon(), Text = "KovaaK's Companion", Visible = _settings.ShowTrayIcon, ContextMenuStrip = menu,
         };
         _tray.MouseClick += (_, e) => { if (e.Button == WinForms.MouseButtons.Left) ShowMain(); };
         if (_lastError.Length > 0) _tray.ShowBalloonTip(5000, "KovaaK's Companion", _lastError, WinForms.ToolTipIcon.Warning);
@@ -647,6 +652,7 @@ public sealed class AppHost : IDisposable
         AppLog.FilePath = s.LogFile;
         SaveSettings();
         PreflightAccess();
+        if (_tray != null) _tray.Visible = s.ShowTrayIcon;
         var customChanged = s.Theme == "Custom" && (s.CustomHue != old.CustomHue || s.CustomSaturation != old.CustomSaturation || s.CustomBrightness != old.CustomBrightness);
         if (s.Language != old.Language || s.Theme != old.Theme || customChanged)
         {

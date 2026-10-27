@@ -18,7 +18,6 @@ namespace KovaaksCompanion.App;
 public partial class SettingsView : UserControl
 {
     readonly AppHost _host;
-    static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(10) };
     bool _open, _loading = true;
     int _tok;
 
@@ -62,6 +61,9 @@ public partial class SettingsView : UserControl
         PbOnly.IsChecked = s.VideoPbOnly;
         foreach (RadioButton r in FolderBar.Children) r.IsChecked = (string)r.Tag == (s.VideoByRun ? "Run" : "Session");
         AutoStart.IsChecked = Autostart.IsOn();
+        LaunchWithGame.IsChecked = s.LaunchWithGame;
+        ExitWithGame.IsChecked = s.ExitWithGame;
+        ShowTray.IsChecked = s.ShowTrayIcon;
         AutoUpdate.IsChecked = s.AutoUpdate;
         SizeCamFrame(s);
         CamOn.IsChecked = s.WebcamEnabled;
@@ -257,6 +259,9 @@ public partial class SettingsView : UserControl
         {
             KovaaksPath = Kovaaks.Text.Trim(), DataFolder = Data.Text.Trim() == cur.DataRoot ? cur.DataFolder : Data.Text.Trim(), SteamId = !SteamValid() || Steam.Text.Trim() == cur.EffectiveSteamId ? cur.SteamId : Steam.Text.Trim(),
             StartWithWindows = AutoStart.IsChecked == true,
+            LaunchWithGame = LaunchWithGame.IsChecked == true,
+            ExitWithGame = ExitWithGame.IsChecked == true,
+            ShowTrayIcon = ShowTray.IsChecked == true,
             AutoUpdate = AutoUpdate.IsChecked == true,
             VideoQuality = QualityBar.Children.OfType<RadioButton>().FirstOrDefault(r => r.IsChecked == true)?.Tag is string t
                 && Enum.TryParse<VideoQuality>(t, out var q) ? q : cur.VideoQuality,
@@ -640,6 +645,44 @@ public partial class SettingsView : UserControl
     {
         if (_loading) return;
         Autostart.Apply(AutoStart.IsChecked == true);
+        if (AutoStart.IsChecked == true && LaunchWithGame.IsChecked == true) LaunchWithGame.IsChecked = false;
+        Save();
+    }
+
+    void SetSilently(CheckBox box, bool value)
+    {
+        _loading = true;
+        box.IsChecked = value;
+        _loading = false;
+    }
+
+    /// <summary>Writes or removes the app in KovaaK's Steam launch options. Steam rewrites that file on exit, so a running Steam is closed first (after asking) and started again.</summary>
+    async void OnLaunchWithGame(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        var on = LaunchWithGame.IsChecked == true;
+        var s = _host.Settings;
+        var steamId = s.EffectiveSteamId;
+        var exe = Environment.ProcessPath ?? "";
+        var result = await Task.Run(() => SteamLaunchOption.Apply(s.KovaaksPath, steamId, exe, Autostart.TrayArg, on));
+        var restart = false;
+        if (result == SteamLaunchOption.Result.SteamRunning)
+        {
+            if (MessageBox.Show(Window.GetWindow(this), L.T("Steam must be closed to change the launch option. Close Steam now? It restarts afterwards."), "KovaaK's Companion", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+            { SetSilently(LaunchWithGame, !on); return; }
+            result = await Task.Run(() => SteamLaunchOption.CloseSteam(s.KovaaksPath, TimeSpan.FromSeconds(30))
+                ? SteamLaunchOption.Apply(s.KovaaksPath, steamId, exe, Autostart.TrayArg, on)
+                : SteamLaunchOption.Result.SteamRunning);
+            restart = true;
+        }
+        if (restart) SteamLaunchOption.StartSteam(s.KovaaksPath);
+        if (result != SteamLaunchOption.Result.Done)
+        {
+            SetSilently(LaunchWithGame, !on);
+            MessageBox.Show(Window.GetWindow(this), L.T("Could not change the Steam launch option"), "KovaaK's Companion", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        if (on && AutoStart.IsChecked == true) AutoStart.IsChecked = false;
         Save();
     }
 
@@ -654,13 +697,14 @@ public partial class SettingsView : UserControl
         Save();
     }
 
-    static string CheckText => L.T("Check for updates");
-
     void OnAutoStartLabel(object sender, MouseButtonEventArgs e) => AutoStart.IsChecked = AutoStart.IsChecked != true;
+    void OnLaunchWithGameLabel(object sender, MouseButtonEventArgs e) => LaunchWithGame.IsChecked = LaunchWithGame.IsChecked != true;
+    void OnExitWithGameLabel(object sender, MouseButtonEventArgs e) => ExitWithGame.IsChecked = ExitWithGame.IsChecked != true;
     void OnBeatenLabel(object sender, MouseButtonEventArgs e) => DeleteBeaten.IsChecked = DeleteBeaten.IsChecked != true;
 
     void OnPbOnlyLabel(object sender, MouseButtonEventArgs e) => PbOnly.IsChecked = PbOnly.IsChecked != true;
     void OnKeepPbLabel(object sender, MouseButtonEventArgs e) => KeepPb.IsChecked = KeepPb.IsChecked != true;
+    void OnTrayLabel(object sender, MouseButtonEventArgs e) => ShowTray.IsChecked = ShowTray.IsChecked != true;
     void OnAutoUpdateLabel(object sender, MouseButtonEventArgs e) => AutoUpdate.IsChecked = AutoUpdate.IsChecked != true;
     /// <summary>Opens the userscript in the default browser, where the userscript manager offers to install it.</summary>
     void OnInstallUserScript(object sender, RoutedEventArgs e)
@@ -668,37 +712,6 @@ public partial class SettingsView : UserControl
         if (!_host.InstallUserScript()) UserScriptBtn.Content = L.T("Could not open the browser");
     }
 
-    async void OnCheckUpdate(object sender, RoutedEventArgs e)
-    {
-        var tok = _tok;
-        CheckBtn.IsEnabled = false;
-        CheckBtn.Content = L.T("Checking…");
-        var latest = await UpdateCheck.Fetch(Http);
-        if (tok != _tok) return;
-        if (latest != null && UpdateCheck.IsNewer(latest, Current))
-        {
-            _host.ShowUpdate(latest);
-            ResetCheck();
-            return;
-        }
-        CheckBtn.Content = latest == null ? L.T("Could not check") : L.T("Up to date");
-        await Task.Delay(3000);
-        if (tok == _tok) ResetCheck();
-    }
-
-    void ResetCheck()
-    {
-        CheckBtn.IsEnabled = true;
-        if (_host.UpdateAvailable)
-        {
-            CheckBtn.Content = L.T("Update");
-            CheckBtn.SetResourceReference(BackgroundProperty, "Red");
-            CheckBtn.Foreground = Brushes.White;
-        }
-        else { CheckBtn.Content = CheckText; CheckBtn.ClearValue(BackgroundProperty); CheckBtn.ClearValue(ForegroundProperty); }
-    }
-
-    // The feedback popup grows with the window so it does not look tiny on a high-resolution monitor.
     // ---- popup shell -------------------------------------------------------------------------------------------
 
     void OnSized(object sender, SizeChangedEventArgs e) => Card.MaxHeight = Math.Max(0, e.NewSize.Height - 32 - 24);
@@ -760,7 +773,6 @@ public partial class SettingsView : UserControl
         _open = true;
         VersionCaption.Text = L.F("Version {0}", Current.ToString(3));
         var tok = ++_tok;
-        ResetCheck();
         Scrim.BeginAnimation(OpacityProperty, null); Scrim.Opacity = 0;
         Card.BeginAnimation(OpacityProperty, null); Card.Opacity = 0;
         Scale.BeginAnimation(ScaleTransform.ScaleXProperty, null); Scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
@@ -769,7 +781,6 @@ public partial class SettingsView : UserControl
         Popups.Opened(this, this, Close, () => { });
         UpdateLayout();
         PageScroll.ScrollToTop();
-        if (_host.UpdateAvailable) PageScroll.ScrollToBottom();
         Animate(true, tok);
     }
 

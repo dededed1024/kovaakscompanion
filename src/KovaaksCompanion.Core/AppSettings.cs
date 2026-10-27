@@ -19,6 +19,10 @@ public sealed record AppSettings
     /// <summary>The resolved webapp username when it belongs to <paramref name="steamId"/>, else null.</summary>
     public string? UsernameFor(string steamId) => WebUsername.Length > 0 && WebUsernameSteamId == steamId ? WebUsername : null;
     public bool StartWithWindows { get; init; } = true;
+    /// <summary>Starts the app together with KovaaK's through the game's Steam launch options (see <see cref="SteamLaunchOption"/>). Replaces <see cref="StartWithWindows"/>.</summary>
+    public bool LaunchWithGame { get; init; }
+    /// <summary>Exits the app when KovaaK's closes, once the session is saved (after the player closes the session summary).</summary>
+    public bool ExitWithGame { get; init; }
     /// <summary>UI language code ("en", "ko"); empty = follow Windows.</summary>
     public string Language { get; init; } = "";
     /// <summary>Color theme name (surfaces and accent together): Dark, Light, Black, Violet, Rose, Forest, Ember, Ocean, Gold or Custom.</summary>
@@ -35,6 +39,8 @@ public sealed record AppSettings
     public const int MinUiScale = 75, MaxUiScale = 150;
     /// <summary>Downloads and installs a newer release at startup without asking.</summary>
     public bool AutoUpdate { get; init; } = true;
+    /// <summary>Shows the notification-area icon. Without it the app keeps running in the background; starting the exe again shows the window.</summary>
+    public bool ShowTrayIcon { get; init; } = true;
     /// <summary>Version that ran last; a lower value at startup means the app was just updated. Empty on a fresh install.</summary>
     public string LastRunVersion { get; init; } = "";
     public Video.VideoQuality VideoQuality { get; init; } = Video.VideoQuality.High;
