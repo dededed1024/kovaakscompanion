@@ -35,7 +35,7 @@ Your replays, videos and stats stay on your PC. The app asks KovaaK's public web
 It never hooks into, injects into or reads the memory of the game, and it does not modify game files. Video uses Windows' standard window capture and the game's audio, and the mouse path comes from Windows Raw Input. It is an unofficial tool, so KovaaK Games has not reviewed it.
 
 **What PC do I need?**
-Recommended (an estimate, not benchmarked): CPU i3-12100F / Ryzen 5 3600, GPU GTX 750 Ti / Radeon RX 560 or better, with current graphics drivers. Windows 10 2004 or newer, x64, and KovaaK's installed through Steam; the app finds the install and the stats folder on its own. Video needs a GPU with a hardware H.264 encoder (NVIDIA NVENC, AMD AMF or Intel Quick Sync). There is no software encoding; without a supported GPU the stats features still work and recording stays off.
+Recommended: CPU i3-12100F / Ryzen 5 3600, GPU GTX 750 Ti / Radeon RX 560 or better.
 
 ## App tour
 
