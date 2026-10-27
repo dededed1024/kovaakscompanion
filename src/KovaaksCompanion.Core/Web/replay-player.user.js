@@ -58,12 +58,30 @@
     for (const n of hits) {
       n.parentElement.dataset[MARK] = '1';
       const replays = byScenario.get(norm(n.nodeValue));
+      const title = F('Play replay ({0})', replays.length);
+      const onClick = e => { e.preventDefault(); e.stopPropagation(); open(replays); };
+      // Where the row has its own action buttons (play, leaderboard), the video button joins them and copies their look.
+      const ref = [...(n.parentElement.closest('tr, li, [role=row]')?.querySelectorAll('.action-button') ?? [])].pop();
+      const bar = ref?.parentElement?.parentElement;
+      if (ref && bar) {
+        const size = ref.querySelector('svg')?.getBoundingClientRect().width || 16;
+        const b = ref.cloneNode(false);
+        b.removeAttribute('href');
+        b.setAttribute('role', 'button');
+        b.style.cursor = 'pointer';
+        b.setAttribute('aria-label', title);
+        b.title = title;
+        b.innerHTML = VIDEO_ICON.replace('width="16" height="16"', `width="${size}" height="${size}"`);
+        b.addEventListener('click', onClick);
+        bar.prepend(b);
+        continue;
+      }
       const b = document.createElement('span');
-      b.innerHTML = VIDEO_ICON;
-      b.title = F('Play replay ({0})', replays.length);
+      b.innerHTML = VIDEO_ICON.replace('width="16" height="16"', 'width="1.1em" height="1.1em" style="display:block"');
+      b.title = title;
       b.setAttribute('role', 'button');
-      b.style.cssText = 'margin-left:6px;cursor:pointer;color:inherit;display:inline-flex;vertical-align:middle;user-select:none';
-      b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); open(replays); });
+      b.style.cssText = 'margin-left:6px;cursor:pointer;color:inherit;display:inline-block;vertical-align:-.2em;line-height:0;user-select:none';
+      b.addEventListener('click', onClick);
       n.parentNode.insertBefore(b, n.nextSibling);
     }
   }
