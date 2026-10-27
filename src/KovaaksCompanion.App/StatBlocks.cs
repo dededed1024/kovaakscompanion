@@ -245,6 +245,16 @@ static class StatBlocks
     internal static TextBlock BigValue(string text, Brush fg, Brush? tone = null) =>
         new() { Text = text, Foreground = tone ?? fg, FontSize = 22, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 4, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
 
+    /// <summary>The brush's color with a quarter of it mixed toward grey, so it stays recognisable but is easier on the eyes.</summary>
+    static Brush Soft(Brush b)
+    {
+        if (b is not SolidColorBrush { Color: var c }) return b;
+        byte Mix(byte v) => (byte)Math.Round(v * 0.75 + 128 * 0.25);
+        var soft = new SolidColorBrush(Color.FromRgb(Mix(c.R), Mix(c.G), Mix(c.B)));
+        soft.Freeze();
+        return soft;
+    }
+
     /// <summary>
     /// Mouse-speed figures as bars, one block per unit separated by lines (bars of a block share one scale). Each figure shows one bar per
     /// line: the average figure of that line's plays.
@@ -280,6 +290,7 @@ static class StatBlocks
             legend.Children.Add(new System.Windows.Shapes.Ellipse { Width = 8, Height = 8, Fill = brush, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(legend.Children.Count == 0 ? 0 : 12, 0, 5, 0) });
             legend.Children.Add(new TextBlock { Text = text, Foreground = DimB, FontSize = 12 });
         }
+        lines = lines.Select(l => (Soft(l.Brush), l.Label, l.Runs)).ToList(); // many bars at once: softer than the colors of the single-figure charts
         foreach (var line in lines) Key(line.Label, line.Brush);
         head.Children.Add(legend);
         host.Children.Add(head);
