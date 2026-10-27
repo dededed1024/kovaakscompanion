@@ -50,7 +50,7 @@
             </StackPanel>
         </ScrollViewer>
         <!-- Scroll edge under the title bar -->
-        <Border Height="48" VerticalAlignment="Top" IsHitTestVisible="False">
+        <Border Height="32" VerticalAlignment="Top" IsHitTestVisible="False">
             <Border.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                     <GradientStop Color="{DynamicResource BgFadeColor}" Offset="0"/>

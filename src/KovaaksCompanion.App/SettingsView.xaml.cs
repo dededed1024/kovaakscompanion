@@ -696,7 +696,7 @@ public partial class SettingsView : UserControl
     // The feedback popup grows with the window so it does not look tiny on a high-resolution monitor.
     // ---- popup shell -------------------------------------------------------------------------------------------
 
-    void OnSized(object sender, SizeChangedEventArgs e) => Card.MaxHeight = Math.Max(0, e.NewSize.Height - 48 - 24);
+    void OnSized(object sender, SizeChangedEventArgs e) => Card.MaxHeight = Math.Max(0, e.NewSize.Height - 32 - 24);
 
     void OnCardSized(object sender, SizeChangedEventArgs e) =>
         Clipper.Clip = new RectangleGeometry(new Rect(0, 0, e.NewSize.Width, e.NewSize.Height), 17, 17);

@@ -72,7 +72,7 @@ public partial class StatsView : UserControl
         HomeScroll.Loaded += (_, _) =>
         {
             var scrollbar = HomeScroll.Template?.FindName("PART_VerticalScrollBar", HomeScroll) as ScrollBar;
-            if (scrollbar != null) scrollbar.Margin = new Thickness(0, 48, 0, 0);
+            if (scrollbar != null) scrollbar.Margin = new Thickness(0, 32, 0, 0);
         };
         // The profile card has a fixed 21:9 design size inside a Viewbox, so the window size only scales it.
         ProfileHost.SizeChanged += (_, _) => RefitProfile();

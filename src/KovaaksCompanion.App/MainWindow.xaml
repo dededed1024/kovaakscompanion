@@ -7,7 +7,7 @@
         <!-- Caption button: flat 46x48 glyph, hover wash; Close hovers red -->
         <Style x:Key="CaptionButton" TargetType="Button">
             <Setter Property="Width" Value="46"/>
-            <Setter Property="Height" Value="48"/>
+            <Setter Property="Height" Value="32"/>
             <Setter Property="Margin" Value="0"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="MinWidth" Value="0"/>
@@ -69,12 +69,12 @@
         </Style>
     </Window.Resources>
     <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="48" ResizeBorderThickness="6" GlassFrameThickness="-1" CornerRadius="0" UseAeroCaptionButtons="False"/>
+        <WindowChrome CaptionHeight="32" ResizeBorderThickness="6" GlassFrameThickness="-1" CornerRadius="0" UseAeroCaptionButtons="False"/>
     </WindowChrome.WindowChrome>
     <Grid x:Name="Root">
         <Border x:Name="GrainLayer" IsHitTestVisible="False" Visibility="Collapsed"/>
         <Grid x:Name="Pages"/>
-        <Grid x:Name="TitleBar" Panel.ZIndex="1" VerticalAlignment="Top" Height="48" Background="Transparent">
+        <Grid x:Name="TitleBar" Panel.ZIndex="1" VerticalAlignment="Top" Height="32" Background="Transparent">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
@@ -84,11 +84,11 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button x:Name="SearchBtn" Style="{StaticResource NavButton}" Width="34" Height="34" Margin="0,0,4,0" ToolTip="{app:Loc 'Search'}" Click="OnSearch">
+                <Button x:Name="SearchBtn" Style="{StaticResource NavButton}" Width="26" Height="26" Margin="0,0,3,0" ToolTip="{app:Loc 'Search'}" Click="OnSearch">
                     <TextBlock Text="&#xE721;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16"
                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
                 </Button>
-                <Button x:Name="GearBtn" Style="{StaticResource NavButton}" Width="34" Height="34" Margin="0,0,4,0" ToolTip="{app:Loc 'Settings'}" Click="OnGear">
+                <Button x:Name="GearBtn" Style="{StaticResource NavButton}" Width="26" Height="26" Margin="0,0,3,0" ToolTip="{app:Loc 'Settings'}" Click="OnGear">
                     <TextBlock x:Name="GearGlyph" Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16"
                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
                 </Button>

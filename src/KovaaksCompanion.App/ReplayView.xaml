@@ -148,7 +148,7 @@
                                 </Border>
                             </Grid>
 
-                            <Border x:Name="BarScrim" Grid.Row="2" Grid.RowSpan="3" Visibility="Collapsed" IsHitTestVisible="False" Margin="0,-48,0,0">
+                            <Border x:Name="BarScrim" Grid.Row="2" Grid.RowSpan="3" Visibility="Collapsed" IsHitTestVisible="False" Margin="0,-32,0,0">
                                 <Border.Background>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                         <GradientStop Color="#00000000" Offset="0"/>

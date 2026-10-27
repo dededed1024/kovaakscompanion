@@ -47,7 +47,7 @@ public partial class MainWindow : Window
         var s = Math.Clamp(percent, AppSettings.MinUiScale, AppSettings.MaxUiScale) / 100.0;
         Root.LayoutTransform = new ScaleTransform(s, s);
         MinWidth = 1280 * s; MinHeight = 720 * s;
-        WindowChrome.GetWindowChrome(this).CaptionHeight = 48 * s;
+        WindowChrome.GetWindowChrome(this).CaptionHeight = 32 * s;
     }
 
     /// <summary>
