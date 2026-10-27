@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         KovaaK's Companion replay player
 // @namespace    kovaaks-companion
-// @version      15
+// @version      16
 // @updateURL    __WEB_DIR__/replay-player.user.js
 // @downloadURL  __WEB_DIR__/replay-player.user.js
 // @description  Adds a video icon next to every scenario you have a recorded replay of and plays the clip in a popup over the page.
@@ -45,7 +45,27 @@
     for (const list of byScenario.values()) list.sort((a, b) => b.score - a.score);
   }
 
-  // Play buttons are found by text, so no site class names are needed.
+  // The row a scenario name is in, found without site class names: the icons (svg, img, icon fonts) to the right of the name, each taken as the
+  // largest element around it that holds no other icon. Returns those elements, nothing when the name has no row of icons.
+  const ICON = 'svg, img, i';
+  function rowItems(n) {
+    const range = document.createRange();
+    range.selectNodeContents(n);
+    const name = range.getBoundingClientRect();
+    for (let e = n.parentElement, i = 0; e && i < 8; e = e.parentElement, i++) {
+      if (e.getBoundingClientRect().height > 150) return [];
+      const icons = [...e.querySelectorAll(ICON)].filter(x => x.getBoundingClientRect().left >= name.right - 1 && x.getBoundingClientRect().width > 0);
+      const items = new Set(icons.map(x => {
+        let u = x;
+        while (u.parentElement && u.parentElement !== e && icons.filter(y => u.parentElement.contains(y)).length === 1) u = u.parentElement;
+        return u;
+      }));
+      if (items.size >= 2) return [...items];
+    }
+    return [];
+  }
+
+  // The video button goes in front of the row's own icon buttons and copies the look of the first one.
   function scan() {
     if (byScenario.size === 0 || !document.body) return;
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -56,33 +76,26 @@
       if (byScenario.has(norm(n.nodeValue))) hits.push(n);
     }
     for (const n of hits) {
+      const items = rowItems(n);
+      if (!items.length) continue; // the row may not be drawn yet; the next scan tries again
       n.parentElement.dataset[MARK] = '1';
       const replays = byScenario.get(norm(n.nodeValue));
       const title = F('Play replay ({0})', replays.length);
-      const onClick = e => { e.preventDefault(); e.stopPropagation(); open(replays); };
-      // Where the row has its own action buttons (play, leaderboard), the video button joins them and copies their look.
-      const ref = [...(n.parentElement.closest('tr, li, [role=row]')?.querySelectorAll('.action-button') ?? [])].pop();
-      const bar = ref?.parentElement?.parentElement;
-      if (ref && bar) {
-        const size = ref.querySelector('svg')?.getBoundingClientRect().width || 16;
-        const b = ref.cloneNode(false);
-        b.removeAttribute('href');
-        b.setAttribute('role', 'button');
-        b.style.cursor = 'pointer';
-        b.setAttribute('aria-label', title);
-        b.title = title;
-        b.innerHTML = VIDEO_ICON.replace('width="16" height="16"', `width="${size}" height="${size}"`);
-        b.addEventListener('click', onClick);
-        bar.prepend(b);
-        continue;
-      }
-      const b = document.createElement('span');
-      b.innerHTML = VIDEO_ICON.replace('width="16" height="16"', 'width="1.1em" height="1.1em" style="display:block"');
-      b.title = title;
+      const first = items.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0];
+      const ref = first.matches(ICON) ? first : first.querySelector(ICON);
+      const look = getComputedStyle(ref);
+      const icon = new DOMParser().parseFromString(VIDEO_ICON.replace('width="16" height="16"', `width="${ref.getBoundingClientRect().width}" height="${ref.getBoundingClientRect().height}"`), 'text/html').body.firstChild;
+      icon.style.cssText = `display:${look.display};vertical-align:${look.verticalAlign};margin:${look.margin}`;
+      const copy = first.cloneNode(true);
+      let b = icon;
+      if (copy.matches(ICON)) first.before(icon);
+      else { copy.querySelector(ICON).replaceWith(icon); b = copy; first.before(copy); }
+      for (const x of [b, ...b.querySelectorAll('*')]) for (const a of ['href', 'id', 'aria-label', 'title']) x.removeAttribute(a);
+      b.setAttribute('aria-label', title);
       b.setAttribute('role', 'button');
-      b.style.cssText = 'margin-left:6px;cursor:pointer;color:inherit;display:inline-block;vertical-align:-.2em;line-height:0;user-select:none';
-      b.addEventListener('click', onClick);
-      n.parentNode.insertBefore(b, n.nextSibling);
+      b.style.cursor = 'pointer';
+      b.title = title;
+      b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); open(replays); });
     }
   }
 
@@ -569,8 +582,8 @@
       const pad = (hi - lo) * .06 || (m.pct ? .05 : Math.max(Math.abs(hi) * .1, 1));
       lo -= pad; hi += pad;
       if (Math.min(...all) >= 0) lo = Math.max(0, lo);
-      const W = el.clientWidth || 600, H = 170, L = 46, B = 18, T = 6, R = 8;
-      const X = s => L + s / secs * (W - L - R), Y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo || 1));
+      const W = el.clientWidth || 600, H = 170, L = 46, B = 18, Top = 6, R = 8;
+      const X = s => L + s / secs * (W - L - R), Y = v => Top + (H - Top - B) * (1 - (v - lo) / (hi - lo || 1));
       const path = a => { let d = '', pen = false; a.forEach((v, s) => { if (!isFinite(v)) { pen = false; return; } d += `${pen ? 'L' : 'M'}${X(s).toFixed(1)},${Y(v).toFixed(1)}`; pen = true; }); return d; };
       let svg = '';
       for (let i = 0; i <= 3; i++) {
@@ -691,13 +704,13 @@
     const lines = LINES.filter(l => R[l.key].some(v => v != null && (l.key === 'reloads' || l.key === 'dist' ? v > .01 : true)));
 
     function draw() {
-      const W = el.clientWidth || 600, H = 210, L = 44, T = 8, B = 20, rightCols = lines.filter(l => shown.has(l.key)).length;
+      const W = el.clientWidth || 600, H = 210, L = 44, Top = 8, B = 20, rightCols = lines.filter(l => shown.has(l.key)).length;
       const Rm = 8 + rightCols * 38, end = Math.min(n, start + MAX), m = end - start;
       const X = i => L + (m <= 1 ? 0 : (i - start) / (m - 1)) * (W - L - Rm), idx = Array.from({ length: m }, (_, k) => start + k);
       const sc = R.score.slice(start, end);
       let lo = Math.min(...sc), hi = Math.max(...sc);
       const pad = (hi - lo) * .08 || 1; lo = Math.max(0, lo - pad); hi += pad;
-      const Y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+      const Y = v => Top + (H - Top - B) * (1 - (v - lo) / (hi - lo));
       let svg = '';
       for (const v of niceTicks(lo, hi)) svg += `<line x1="${L}" x2="${W - Rm}" y1="${Y(v)}" y2="${Y(v)}" class="g"/><text x="${L - 4}" y="${Y(v) + 3}" text-anchor="end" fill="currentColor" opacity=".6">${num(v, 0)}</text>`;
       const avg = idx.map(i => { const a = R.score.slice(Math.max(0, i - 4), i + 1); return a.reduce((x, y) => x + y, 0) / a.length; });
@@ -712,7 +725,7 @@
         if (!vals.length) continue;
         let a = Math.min(...vals), b = Math.max(...vals);
         if (l.key === 'acc') { a = Math.max(0, Math.floor((a - .02) * 20) / 20); b = Math.min(1, Math.ceil((b + .02) * 20) / 20); } else { const p = (b - a) * .08 || 1; a = a >= 0 ? Math.max(0, a - p) : a - p; b += p; }
-        const Yl = v => T + (H - T - B) * (1 - (v - a) / (b - a || 1));
+        const Yl = v => Top + (H - Top - B) * (1 - (v - a) / (b - a || 1));
         let d = '', pen = false, last = null;
         for (const i of idx) {
           const v = R[l.key][i];
@@ -723,7 +736,7 @@
         for (const t of niceTicks(a, b, 3)) svg += `<text x="${W - 4 - col * 38}" y="${Yl(t) + 3}" text-anchor="end" fill="${l.color}">${l.key === 'acc' ? Math.round(t * 100) + '%' : compact(t)}</text>`;
         extra.push(l); col++;
       }
-      svg += `<g class="hv" visibility="hidden"><line y1="${T}" y2="${H - B}" stroke="currentColor" opacity=".4"/><circle r="4.5" fill="${COLOR.accent}" stroke="#fff" stroke-width="1.5"/></g>`;
+      svg += `<g class="hv" visibility="hidden"><line y1="${Top}" y2="${H - B}" stroke="currentColor" opacity=".4"/><circle r="4.5" fill="${COLOR.accent}" stroke="#fff" stroke-width="1.5"/></g>`;
       const chips = lines.map(l => `<button class="chip${shown.has(l.key) ? '' : ' off'}" data-l="${l.key}"><i style="background:${l.color}"></i>${T(l.name)}</button>`).join('');
       el.innerHTML = `<div class="ctitle">${T('Run stats')}<span class="chips2">${chips}</span></div><div class="cwrap"><svg class="cchart" viewBox="0 0 ${W} ${H}" height="${H}">${svg}</svg><div class="tip" hidden></div></div>`
         + (n > MAX ? `<input type="range" class="range" min="0" max="${n - MAX}" value="${start}">` : '');
@@ -755,11 +768,11 @@
   function renderSens(el, ov) {
     const S = ov.sens;
     if (!S || !S.groups.length) { el.hidden = true; return; }
-    const W = el.clientWidth || 600, H = 170, L = 44, B = 20, T = 8, Rm = 10;
+    const W = el.clientWidth || 600, H = 170, L = 44, B = 20, Top = 8, Rm = 10;
     const cms = S.points.map(p => p[1]), scores = S.points.map(p => p[2]);
     let x0 = Math.min(...cms), x1 = Math.max(...cms), y0 = Math.min(...scores), y1 = Math.max(...scores);
     const px = (x1 - x0) * .08 || 1, py = (y1 - y0) * .1 || 1; x0 -= px; x1 += px; y0 = Math.max(0, y0 - py); y1 += py;
-    const X = v => L + (v - x0) / (x1 - x0) * (W - L - Rm), Y = v => T + (H - T - B) * (1 - (v - y0) / (y1 - y0));
+    const X = v => L + (v - x0) / (x1 - x0) * (W - L - Rm), Y = v => Top + (H - Top - B) * (1 - (v - y0) / (y1 - y0));
     let svg = '';
     for (const v of niceTicks(y0, y1)) svg += `<line x1="${L}" x2="${W - Rm}" y1="${Y(v)}" y2="${Y(v)}" class="g"/><text x="${L - 4}" y="${Y(v) + 3}" text-anchor="end" fill="currentColor" opacity=".6">${num(v, 0)}</text>`;
     for (const v of niceTicks(x0, x1, 5)) svg += `<text x="${X(v)}" y="${H - 5}" text-anchor="middle" fill="currentColor" opacity=".6">${num(v, 1)}</text>`;
