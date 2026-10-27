@@ -170,10 +170,16 @@ public static partial class SteamLaunchOption
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { AppLog.Error("steam launch option", e); return Result.NotFound; }
     }
 
-    /// <summary>Rewrites our option when it points at an old exe path. Silent while Steam runs; the next start retries.</summary>
+    /// <summary>Rewrites our option when it points at an old exe path or uses the old cmd form. While Steam runs it waits for Steam to exit
+    /// (Steam rewrites the file on exit, and the game is always started by a running Steam), so the fix lands after the next Steam close.</summary>
     public static void Refresh(string kovaaksPath, string steamId, string exePath, string trayArg)
     {
-        if (!IsOn(kovaaksPath, steamId, exePath, trayArg)) Apply(kovaaksPath, steamId, exePath, trayArg, true);
+        if (IsOn(kovaaksPath, steamId, exePath, trayArg)) return;
+        while (Apply(kovaaksPath, steamId, exePath, trayArg, true) == Result.SteamRunning)
+        {
+            while (SteamIsRunning()) Thread.Sleep(5000);
+            Thread.Sleep(2000); // let Steam finish writing the file
+        }
     }
 
     readonly record struct Tok(char Kind, int Start, int End, string Text);
