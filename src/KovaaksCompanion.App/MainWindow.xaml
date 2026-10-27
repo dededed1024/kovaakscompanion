@@ -83,12 +83,12 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button x:Name="SearchBtn" Style="{StaticResource NavButton}" Width="26" Height="26" Margin="0,0,3,0" ToolTip="{app:Loc 'Search'}" Click="OnSearch">
+            <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                <Button x:Name="SearchBtn" Style="{StaticResource NavButton}" Width="26" Height="26" Margin="0,0,6,0" ToolTip="{app:Loc 'Search'}" Click="OnSearch">
                     <TextBlock Text="&#xE721;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16"
                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
                 </Button>
-                <Button x:Name="GearBtn" Style="{StaticResource NavButton}" Width="26" Height="26" Margin="0,0,3,0" ToolTip="{app:Loc 'Settings'}" Click="OnGear">
+                <Button x:Name="GearBtn" Style="{StaticResource NavButton}" Width="26" Height="26" ToolTip="{app:Loc 'Settings'}" Click="OnGear">
                     <TextBlock x:Name="GearGlyph" Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16"
                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
                 </Button>
@@ -98,6 +98,8 @@
                 <Button x:Name="MaxButton" Style="{StaticResource CaptionButton}" Content="&#xE922;" Click="OnMaximize" ToolTip="{app:Loc 'Maximize'}"/>
                 <Button Style="{StaticResource CloseButton}" Content="&#xE8BB;" Click="OnClose" ToolTip="{app:Loc 'Close'}"/>
             </StackPanel>
+            <!-- Dims the bar like the popup scrims do (the bar sits above the pages and popups); clicks pass through -->
+            <Border x:Name="TitleDim" Grid.ColumnSpan="6" Background="{DynamicResource Scrim}" Opacity="0" IsHitTestVisible="False"/>
         </Grid>
         <!-- Confetti over everything, title bar and popups included -->
         <app:Confetti x:Name="ConfettiLayer" Panel.ZIndex="2" IsHitTestVisible="False"/>

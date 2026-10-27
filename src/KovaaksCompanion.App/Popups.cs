@@ -22,6 +22,7 @@ static class Popups
     {
         Stack.Clear();
         Base.Clear();
+        _any = false;
     }
 
     /// <summary>Elements that are inert while any popup is open (the page behind the popups, the title bar buttons).</summary>
@@ -59,9 +60,15 @@ static class Popups
     /// <summary>Closes the top popup; false when none was open.</summary>
     public static bool CloseTop() => Stack.Count > 0 && Stack[^1].Close();
 
+    /// <summary>Raised when the first popup opens or the last one closes.</summary>
+    public static event Action<bool>? AnyChanged;
+
+    static bool _any;
+
     static void Sync()
     {
         var any = Stack.Count > 0;
+        if (any != _any) { _any = any; AnyChanged?.Invoke(any); }
         foreach (var b in Base) { b.IsEnabled = !any; b.IsHitTestVisible = !any; }
         for (var i = 0; i < Stack.Count; i++) Stack[i].Layer.IsEnabled = i == Stack.Count - 1;
     }

@@ -36,10 +36,14 @@ public partial class MainWindow : Window
         Popups.AddBase(SearchBtn, GearBtn);
         PreviewKeyDown += OnNavKey;
         PreviewMouseDown += (_, e) => { if (e.ChangedButton == MouseButton.XButton1) { e.Handled = true; GoBack(); } };
-        Closed += (_, _) => { _stats.Detach(); _replay.Detach(); _settings.Detach(); };
+        Popups.AnyChanged += DimTitleBar;
+        Closed += (_, _) => { Popups.AnyChanged -= DimTitleBar; _stats.Detach(); _replay.Detach(); _settings.Detach(); };
         StateChanged += (_, _) => SyncCaption();
         if (host.UpdateAvailable) MarkUpdate();
     }
+
+    void DimTitleBar(bool on) =>
+        TitleDim.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(on ? 1 : 0, TimeSpan.FromMilliseconds(on ? 200 : 180)), System.Windows.Media.Animation.HandoffBehavior.SnapshotAndReplace);
 
     /// <summary>Scales the whole window content to <paramref name="percent"/> of the design size.</summary>
     public void ApplyScale(int percent)
