@@ -12,6 +12,8 @@ KovaaK's Companion is a Windows tray app. It reads your KovaaK's stats and bench
 
 **Install:** download the exe from [Releases](https://github.com/dededed1024/KovaaksCompanion/releases) and run it. There is no installer. Settings and the run archive are stored under `%LOCALAPPDATA%\KovaaksCompanion`. Videos go to a `KovaaksCompanion` folder at the root of the drive KovaaK's is installed on, unless you change that location in Settings.
 
+**Languages:** English, 한국어 (Korean), 中文 (Chinese) and Русский (Russian). The app follows your Windows language and falls back to English; change it any time in Settings.
+
 ## Key features
 
 - **Benchmark tiers:** 132 benchmark playlists, from Voltaic and Revosect to Viscose, with each scenario scored against every tier threshold. Hover a scenario to see how many points it needs for the next tier, or copy the playlist's sharecode.
