@@ -63,6 +63,7 @@ public partial class SettingsView : UserControl
         AutoStart.IsChecked = Autostart.IsOn();
         LaunchWithGame.IsChecked = s.LaunchWithGame;
         ExitWithGame.IsChecked = s.ExitWithGame;
+        ExitOnClose.IsChecked = s.ExitOnClose;
         ShowTray.IsChecked = s.ShowTrayIcon;
         AutoUpdate.IsChecked = s.AutoUpdate;
         SizeCamFrame(s);
@@ -261,6 +262,7 @@ public partial class SettingsView : UserControl
             StartWithWindows = AutoStart.IsChecked == true,
             LaunchWithGame = LaunchWithGame.IsChecked == true,
             ExitWithGame = ExitWithGame.IsChecked == true,
+            ExitOnClose = ExitOnClose.IsChecked == true,
             ShowTrayIcon = ShowTray.IsChecked == true,
             AutoUpdate = AutoUpdate.IsChecked == true,
             VideoQuality = QualityBar.Children.OfType<RadioButton>().FirstOrDefault(r => r.IsChecked == true)?.Tag is string t
@@ -700,6 +702,7 @@ public partial class SettingsView : UserControl
     void OnAutoStartLabel(object sender, MouseButtonEventArgs e) => AutoStart.IsChecked = AutoStart.IsChecked != true;
     void OnLaunchWithGameLabel(object sender, MouseButtonEventArgs e) => LaunchWithGame.IsChecked = LaunchWithGame.IsChecked != true;
     void OnExitWithGameLabel(object sender, MouseButtonEventArgs e) => ExitWithGame.IsChecked = ExitWithGame.IsChecked != true;
+    void OnExitOnCloseLabel(object sender, MouseButtonEventArgs e) => ExitOnClose.IsChecked = ExitOnClose.IsChecked != true;
     void OnBeatenLabel(object sender, MouseButtonEventArgs e) => DeleteBeaten.IsChecked = DeleteBeaten.IsChecked != true;
 
     void OnPbOnlyLabel(object sender, MouseButtonEventArgs e) => PbOnly.IsChecked = PbOnly.IsChecked != true;

@@ -42,6 +42,16 @@ public partial class MainWindow : Window
         if (host.UpdateAvailable) MarkUpdate();
     }
 
+    /// <summary>Set when a fresh window takes this one's place, so closing it does not count as the user closing the app.</summary>
+    public bool Replaced { get; set; }
+
+    // The close button, Alt+F4 and the taskbar all end here.
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+        base.OnClosing(e);
+        if (!Replaced && _host.Settings.ExitOnClose && !Application.Current.Dispatcher.HasShutdownStarted) _host.Exit();
+    }
+
     void DimTitleBar(bool on) =>
         TitleDim.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(on ? 1 : 0, TimeSpan.FromMilliseconds(on ? 200 : 180)), System.Windows.Media.Animation.HandoffBehavior.SnapshotAndReplace);
 

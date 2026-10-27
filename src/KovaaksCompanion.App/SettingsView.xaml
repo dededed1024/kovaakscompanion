@@ -306,6 +306,14 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{app:Loc 'Exit when the window is closed'}" Foreground="{DynamicResource Fg}" VerticalAlignment="Center" Margin="4,0,0,0" Cursor="Hand" Background="Transparent" MouseLeftButtonUp="OnExitOnCloseLabel"/>
+                                        <CheckBox Grid.Column="1" x:Name="ExitOnClose" Style="{StaticResource Switch}" HorizontalAlignment="Right" VerticalAlignment="Center" Checked="OnCommit" Unchecked="OnCommit"/>
+                                    </Grid>
+                                    <Grid Margin="0,10,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
                                         <TextBlock Text="{app:Loc 'Show in system tray'}" Foreground="{DynamicResource Fg}" VerticalAlignment="Center" Margin="4,0,0,0" Cursor="Hand" Background="Transparent" MouseLeftButtonUp="OnTrayLabel"/>
                                         <CheckBox Grid.Column="1" x:Name="ShowTray" Style="{StaticResource Switch}" HorizontalAlignment="Right" VerticalAlignment="Center" Checked="OnCommit" Unchecked="OnCommit"/>
                                     </Grid>

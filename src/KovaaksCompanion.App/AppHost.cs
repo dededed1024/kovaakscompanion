@@ -526,11 +526,13 @@ public sealed class AppHost : IDisposable
         catch (Exception e) { _capture = null; SetError("mouse: " + e.Message, e); }
     }
 
+    public void Exit() => _app.Dispatcher.Invoke(_app.Shutdown);
+
     void BuildTray()
     {
         var menu = new WinForms.ContextMenuStrip { Renderer = new DarkMenuRenderer(), ShowImageMargin = false, Font = new System.Drawing.Font("Malgun Gothic", 10f) };
         menu.Items.Add(L.T("Open"), null, (_, _) => ShowMain());
-        menu.Items.Add(L.T("Exit"), null, (_, _) => _app.Dispatcher.Invoke(_app.Shutdown));
+        menu.Items.Add(L.T("Exit"), null, (_, _) => Exit());
 
         _tray = new WinForms.NotifyIcon
         {
@@ -574,6 +576,7 @@ public sealed class AppHost : IDisposable
         var bounds = old.WindowState == WindowState.Normal ? new Rect(old.Left, old.Top, old.Width, old.Height) : old.RestoreBounds;
         var state = old.WindowState == WindowState.Maximized ? WindowState.Maximized : WindowState.Normal;
         OpenMain(bounds, state);
+        old.Replaced = true;
         old.Close();
         _main!.ShowPage("Settings");
         RebuildTray();

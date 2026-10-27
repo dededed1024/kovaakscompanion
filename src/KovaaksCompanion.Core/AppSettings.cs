@@ -23,6 +23,8 @@ public sealed record AppSettings
     public bool LaunchWithGame { get; init; }
     /// <summary>Exits the app when KovaaK's closes, once the session is saved (after the player closes the session summary).</summary>
     public bool ExitWithGame { get; init; }
+    /// <summary>Exits the app when the window's close button is used, instead of leaving it running in the background.</summary>
+    public bool ExitOnClose { get; init; }
     /// <summary>UI language code ("en", "ko"); empty = follow Windows.</summary>
     public string Language { get; init; } = "";
     /// <summary>Color theme name (surfaces and accent together): Dark, Light, Black, Violet, Rose, Forest, Ember, Ocean, Gold or Custom.</summary>
