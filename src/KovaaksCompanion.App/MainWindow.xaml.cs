@@ -158,10 +158,10 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Opens the replay popup with the run ending at <paramref name="end"/> selected; false when it was not recorded.</summary>
-    public bool ShowRun(string scenario, DateTime end, bool withoutRecording = false)
+    public bool ShowRun(string scenario, DateTime end, bool withoutRecording = false, double? startAt = null)
     {
         _settings.Close();
-        return _replay.ShowRun(_stats.SheetData(), scenario, end, withoutRecording);
+        return _replay.ShowRun(_stats.SheetData(), scenario, end, withoutRecording, startAt);
     }
 
     /// <summary>Opens the most recent recorded run; false (window only) when nothing was recorded.</summary>

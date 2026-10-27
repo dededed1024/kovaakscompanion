@@ -216,13 +216,23 @@ public partial class ReplayView : UserControl
     public void Show(ScenarioData data, string scenario, Point? origin) { RefreshItems(); Open(data, scenario, null, origin); }
 
     /// <summary>Opens the popup with the run that ended at <paramref name="end"/> selected; false when it has no recording, unless <paramref name="withoutRecording"/> selects it anyway.</summary>
-    public bool ShowRun(ScenarioData data, string scenario, DateTime end, bool withoutRecording = false)
+    public bool ShowRun(ScenarioData data, string scenario, DateTime end, bool withoutRecording = false, double? startAt = null)
     {
         RefreshItems();
         if (!withoutRecording && ReplayStore.FindRun(Infos(), scenario, end) < 0 && !_host.IsPending(scenario, end)) return false;
         Open(data, scenario, end, null);
+        if (startAt is { } s)
+        {
+            // the video is still loading unless this run was already open
+            if (_duration > 0) { CurPosTo(s); _startAt = null; } else _startAt = s;
+        }
         return true;
     }
+
+    /// <summary>Video time (s) to jump to once the clip that is loading has opened; set by <see cref="ShowRun"/>.</summary>
+    double? _startAt;
+
+    void CurPosTo(double sec) { Media.Position = Math.Clamp(sec, 0, _duration); }
 
     /// <summary>Opens the most recent recorded run; false when nothing was recorded yet.</summary>
     public bool ShowLatest(ScenarioData data)
@@ -1254,7 +1264,8 @@ public partial class ReplayView : UserControl
         Media.SpeedRatio = _speed;
         ApplyMute();
         Media.Pause();
-        Media.Position = Math.Clamp(_replay.Info.VideoTime(0) - 1, 0, _duration);
+        Media.Position = Math.Clamp(_startAt ?? _replay.Info.VideoTime(0) - 1, 0, _duration);
+        _startAt = null;
         BuildChart();
         SetTransport(true);
         LayoutCard(new Size(ActualWidth, ActualHeight));

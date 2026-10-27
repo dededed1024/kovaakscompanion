@@ -66,9 +66,6 @@ public sealed class AppHost : IDisposable
     readonly bool _settingsDirty;
 
     public AppSettings Settings => _settings;
-    ReplayWebServer? _web;
-    /// <summary>True while the browser userscript server is listening.</summary>
-    public bool WebPlayerRunning => _web is not null;
     /// <summary>True while the game window is being recorded.</summary>
     public bool GameActive => _video?.IsRecording == true;
     /// <summary>The replays: info and data in the archive, videos in the videos folder.</summary>
@@ -316,6 +313,7 @@ public sealed class AppHost : IDisposable
     {
         var archive = _settings.OpenReplays();
         if (!await Task.Run(() => archive.DeleteVideo(info))) return false;
+        WriteWebFiles();
         RunFinished?.Invoke();
         return true;
     }
@@ -357,15 +355,16 @@ public sealed class AppHost : IDisposable
             AppLog.Write("replay", $"saved {info.Id:N}");
             CacheReplays(info);
             DeleteBeatenRuns(info); // before the views reload, so they never list a run that is about to go
+            WriteWebFiles();
             ReplaySaved?.Invoke(info);
         };
 
         StartWatcher();
-        SyncWebPlayer();
 
         BuildTray();
         Autostart.Refresh(_settings.StartWithWindows);
-        _ = Task.Run(() => { var moved = MigrateReplays() | MoveVideosIntoSessions(); CacheReplays(); if (EnforceStorageLimits() | IngestStats() | moved) RunFinished?.Invoke(); });
+        ProtocolHandler.Register();
+        _ = Task.Run(() => { var moved = MigrateReplays() | MoveVideosIntoSessions(); CacheReplays(); var cleaned = EnforceStorageLimits(); WriteWebFiles(); if (cleaned | IngestStats() | moved) RunFinished?.Invoke(); });
         _ = Task.Run(() => { try { _settings.OpenStore().BackupArchive(); } catch (IOException e) { AppLog.Write("archive", "backup failed: " + e.Message); } });
         if (showMain) ShowMain("Stats");
         _ = CheckWhatsNew();
@@ -562,10 +561,10 @@ public sealed class AppHost : IDisposable
     });
 
     /// <summary>Opens the replay of a past run; false when that run was not recorded, unless <paramref name="withoutRecording"/> opens it selected anyway.</summary>
-    public bool ShowRun(string scenario, DateTime end, bool withoutRecording = false) => _app.Dispatcher.Invoke(() =>
+    public bool ShowRun(string scenario, DateTime end, bool withoutRecording = false, double? startAt = null) => _app.Dispatcher.Invoke(() =>
     {
         ShowMain();
-        return _main!.ShowRun(scenario, end, withoutRecording);
+        return _main!.ShowRun(scenario, end, withoutRecording, startAt);
     });
 
     public void SaveUi()
@@ -591,15 +590,29 @@ public sealed class AppHost : IDisposable
         foreach (var b in blocked) SetError("access denied: " + b);
     }
 
-    /// <summary>Starts or stops the userscript server to match the setting; the token is created on first use.</summary>
-    void SyncWebPlayer()
+    /// <summary>Rewrites the files the browser userscript plays replays from (see <see cref="ReplayWebFiles"/>); they only name videos that exist now.</summary>
+    void WriteWebFiles()
     {
-        if (_settings.WebPlayer && _web is null)
+        try { ReplayWebFiles.Write(_settings.OpenReplays(), ReplayWebFiles.FolderOf(_settings)); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { AppLog.Write("web", "writing the browser player files failed: " + e.Message); }
+    }
+
+    /// <summary>Opens the userscript in the default browser, where the userscript manager offers to install it; false when no browser could be started.</summary>
+    public bool InstallUserScript()
+    {
+        try
         {
-            if (_settings.WebPlayerToken.Length == 0) { _settings = _settings with { WebPlayerToken = ReplayWebServer.NewToken() }; SaveSettings(); }
-            _web = ReplayWebServer.TryStart(() => _settings.OpenReplays(), _settings.WebPlayerToken);
+            WriteWebFiles();
+            return DefaultBrowser.OpenFile(ReplayWebFiles.WriteScript(ReplayWebFiles.FolderOf(_settings)));
         }
-        else if (!_settings.WebPlayer && _web is not null) { _web.Dispose(); _web = null; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { AppLog.Write("web", "writing the userscript failed: " + e.Message); return false; }
+    }
+
+    /// <summary>Shows the replay a <c>kovaaks-companion://open</c> link names, at the video time it carries.</summary>
+    public void OpenLink(string link)
+    {
+        if (ReplayLink.TryParse(link, out var id, out var sec) && Replays.List().FirstOrDefault(i => i.Id == id) is { } info) ShowRun(info.Scenario, info.End, false, sec > 0 ? sec : null);
+        else ShowMain();
     }
 
     public void ApplySettings(AppSettings s)
@@ -609,7 +622,6 @@ public sealed class AppHost : IDisposable
         AppLog.FilePath = s.LogFile;
         SaveSettings();
         PreflightAccess();
-        SyncWebPlayer();
         var customChanged = s.Theme == "Custom" && (s.CustomHue != old.CustomHue || s.CustomSaturation != old.CustomSaturation || s.CustomBrightness != old.CustomBrightness);
         if (s.Language != old.Language || s.Theme != old.Theme || customChanged)
         {
@@ -625,7 +637,7 @@ public sealed class AppHost : IDisposable
             if (s.Grain != old.Grain) _app.Dispatcher.Invoke(() => _main?.ApplyGrain(s.Grain));
         }
         if (s.StorageLimitGb != old.StorageLimitGb || s.MaxAgeDays != old.MaxAgeDays)
-            _ = Task.Run(() => { CacheReplays(); if (EnforceStorageLimits()) RunFinished?.Invoke(); });
+            _ = Task.Run(() => { CacheReplays(); var cleaned = EnforceStorageLimits(); WriteWebFiles(); if (cleaned) RunFinished?.Invoke(); });
     }
 
     public void Dispose()
@@ -634,7 +646,6 @@ public sealed class AppHost : IDisposable
         _tray?.Dispose();
         _trayIcon?.Dispose();
         _watcher?.Dispose();
-        _web?.Dispose();
         _capture?.Dispose();
         _video?.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(8));
         BufferCleaner.Clean(_settings.BufferFolder); // chunks are junk once we exit; if libobs hung, files it still holds are skipped and the next start removes them

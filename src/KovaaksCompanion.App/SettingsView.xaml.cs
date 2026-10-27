@@ -11,7 +11,6 @@ using KovaaksCompanion.Core;
 using KovaaksCompanion.Core.Diagnostics;
 using KovaaksCompanion.Core.Update;
 using KovaaksCompanion.Core.Video;
-using KovaaksCompanion.Core.Web;
 
 namespace KovaaksCompanion.App;
 
@@ -64,8 +63,6 @@ public partial class SettingsView : UserControl
         foreach (RadioButton r in FolderBar.Children) r.IsChecked = (string)r.Tag == (s.VideoByRun ? "Run" : "Session");
         AutoStart.IsChecked = Autostart.IsOn();
         AutoUpdate.IsChecked = s.AutoUpdate;
-        WebPlayer.IsChecked = s.WebPlayer;
-        UserScriptBtn.Visibility = s.WebPlayer ? Visibility.Visible : Visibility.Collapsed;
         SizeCamFrame(s);
         CamOn.IsChecked = s.WebcamEnabled;
         ShowCamPanels(s.WebcamEnabled);
@@ -261,7 +258,6 @@ public partial class SettingsView : UserControl
             KovaaksPath = Kovaaks.Text.Trim(), DataFolder = Data.Text.Trim() == cur.DataRoot ? cur.DataFolder : Data.Text.Trim(), SteamId = !SteamValid() || Steam.Text.Trim() == cur.EffectiveSteamId ? cur.SteamId : Steam.Text.Trim(),
             StartWithWindows = AutoStart.IsChecked == true,
             AutoUpdate = AutoUpdate.IsChecked == true,
-            WebPlayer = WebPlayer.IsChecked == true,
             VideoQuality = QualityBar.Children.OfType<RadioButton>().FirstOrDefault(r => r.IsChecked == true)?.Tag is string t
                 && Enum.TryParse<VideoQuality>(t, out var q) ? q : cur.VideoQuality,
             VideoFps = FpsValid(out var fps) ? fps : cur.VideoFps,
@@ -666,13 +662,10 @@ public partial class SettingsView : UserControl
     void OnPbOnlyLabel(object sender, MouseButtonEventArgs e) => PbOnly.IsChecked = PbOnly.IsChecked != true;
     void OnKeepPbLabel(object sender, MouseButtonEventArgs e) => KeepPb.IsChecked = KeepPb.IsChecked != true;
     void OnAutoUpdateLabel(object sender, MouseButtonEventArgs e) => AutoUpdate.IsChecked = AutoUpdate.IsChecked != true;
-    void OnWebPlayerLabel(object sender, MouseButtonEventArgs e) => WebPlayer.IsChecked = WebPlayer.IsChecked != true;
-
-    /// <summary>Opens the script's address in the default browser; a userscript manager offers to install it.</summary>
+    /// <summary>Opens the userscript in the default browser, where the userscript manager offers to install it.</summary>
     void OnInstallUserScript(object sender, RoutedEventArgs e)
     {
-        if (!_host.WebPlayerRunning) { UserScriptBtn.Content = L.T("Port is in use"); return; }
-        Process.Start(new ProcessStartInfo(ReplayWebServer.ScriptUrl) { UseShellExecute = true });
+        if (!_host.InstallUserScript()) UserScriptBtn.Content = L.T("Could not open the browser");
     }
 
     async void OnCheckUpdate(object sender, RoutedEventArgs e)

@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using KovaaksCompanion.Core.Diagnostics;
 using KovaaksCompanion.Core.Update;
+using KovaaksCompanion.Core.Web;
 
 namespace KovaaksCompanion.App;
 
@@ -12,6 +13,8 @@ public partial class App : Application
     const string ShowEventName = @"Local\KovaaksCompanion.ShowMain";
     const string QuitEventName = @"Local\KovaaksCompanion.Quit";
     const string VersionMapName = @"Local\KovaaksCompanion.Version";
+    const string LinkEventName = @"Local\KovaaksCompanion.OpenLink";
+    const string LinkMapName = @"Local\KovaaksCompanion.OpenLinkText";
 
     /// <summary>This build's version (assembly informational version).</summary>
     public static Version CurrentVersion { get; } = UpdateCheck.ParseVersion(typeof(App).Assembly
@@ -23,6 +26,8 @@ public partial class App : Application
     Mutex? _single;
     EventWaitHandle? _showEvent;
     RegisteredWaitHandle? _showWait;
+    EventWaitHandle? _linkEvent;
+    RegisteredWaitHandle? _linkWait;
     EventWaitHandle? _quitEvent;
     RegisteredWaitHandle? _quitWait;
     MemoryMappedFile? _versionMap;
@@ -44,13 +49,16 @@ public partial class App : Application
             if (!replace || !TakeOver(_single))
             {
                 _single.Dispose(); _single = null;
-                try
-                {
-                    using var ev = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName);
-                    AllowSetForegroundWindow(-1);
-                    ev.Set();
-                }
-                catch (Exception ex) { AppLog.Error("signal show", ex); }
+                // A replay link goes to the running instance; a tray launch (Windows start, KovaaK's start) must not pop its window.
+                if (e.Args.FirstOrDefault(ReplayLink.IsLink) is { } link) SendLink(link);
+                else if (!e.Args.Contains(Autostart.TrayArg))
+                    try
+                    {
+                        using var ev = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName);
+                        AllowSetForegroundWindow(-1);
+                        ev.Set();
+                    }
+                    catch (Exception ex) { AppLog.Error("signal show", ex); }
                 Shutdown();
                 return;
             }
@@ -61,9 +69,12 @@ public partial class App : Application
         _quitWait = ThreadPool.RegisterWaitForSingleObject(_quitEvent, (_, _) => Dispatcher.BeginInvoke(new Action(Shutdown)), null, Timeout.Infinite, false);
         _showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName);
         _showWait = ThreadPool.RegisterWaitForSingleObject(_showEvent, (_, _) => _host?.ShowMain("Stats"), null, Timeout.Infinite, false);
+        _linkEvent = new EventWaitHandle(false, EventResetMode.AutoReset, LinkEventName);
+        _linkWait = ThreadPool.RegisterWaitForSingleObject(_linkEvent, (_, _) => { if (ReadLink() is { } l) _host?.OpenLink(l); }, null, Timeout.Infinite, false);
         _host = new AppHost(this);
         // Autostart launches with --tray; a manual launch opens the Stats window.
         _host.Start(showMain: !e.Args.Contains(Autostart.TrayArg));
+        if (e.Args.FirstOrDefault(ReplayLink.IsLink) is { } startLink) _host.OpenLink(startLink);
     }
 
     static void Unhandled(string title, Exception? ex)
@@ -82,6 +93,39 @@ public partial class App : Application
     static void SignalQuit()
     {
         try { using var q = new EventWaitHandle(false, EventResetMode.AutoReset, QuitEventName); q.Set(); } catch (Exception e) { AppLog.Error("signal quit", e); }
+    }
+
+    /// <summary>Hands a replay link to the running instance (its text through a shared memory map, then the event).</summary>
+    static void SendLink(string link)
+    {
+        try
+        {
+            using var map = MemoryMappedFile.CreateOrOpen(LinkMapName, 2048);
+            using (var s = map.CreateViewStream(0, 2048))
+            {
+                var bytes = System.Text.Encoding.UTF8.GetBytes(link.Length > 1000 ? link[..1000] : link);
+                s.Write(new byte[2048], 0, 2048); s.Position = 0;
+                s.Write(bytes, 0, bytes.Length);
+            }
+            using var ev = new EventWaitHandle(false, EventResetMode.AutoReset, LinkEventName);
+            AllowSetForegroundWindow(-1);
+            ev.Set();
+        }
+        catch (Exception ex) { AppLog.Error("signal replay link", ex); }
+    }
+
+    static string? ReadLink()
+    {
+        try
+        {
+            using var map = MemoryMappedFile.OpenExisting(LinkMapName, MemoryMappedFileRights.Read);
+            using var s = map.CreateViewStream(0, 2048, MemoryMappedFileAccess.Read);
+            var buf = new byte[2048];
+            var n = s.Read(buf, 0, buf.Length);
+            var text = System.Text.Encoding.UTF8.GetString(buf, 0, n).TrimEnd('\0');
+            return text.Length > 0 ? text : null;
+        }
+        catch (Exception ex) { AppLog.Error("read replay link", ex); return null; }
     }
 
     /// <summary>The running instance's published version; null when unreadable.</summary>
@@ -116,6 +160,8 @@ public partial class App : Application
     {
         _showWait?.Unregister(null);
         _showEvent?.Dispose();
+        _linkWait?.Unregister(null);
+        _linkEvent?.Dispose();
         _quitWait?.Unregister(null);
         _quitEvent?.Dispose();
         _versionMap?.Dispose();
