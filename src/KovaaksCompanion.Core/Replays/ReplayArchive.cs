@@ -17,6 +17,8 @@ public sealed partial class ReplayArchive(string archiveFolder, string videoFold
 
     string RepPath(Guid id) => Path.Combine(archiveFolder, id.ToString("N") + RepFile.Extension);
 
+    public string VideoFolder => videoFolder;
+
     /// <summary>Full path of the replay's video, or null when it has none or the file is gone.</summary>
     public string? VideoPath(ReplayInfo info) =>
         info.VideoFile is { Length: > 0 } f && Path.Combine(videoFolder, f) is var p && File.Exists(p) ? p : null;

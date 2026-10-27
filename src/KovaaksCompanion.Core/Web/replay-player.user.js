@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         KovaaK's Companion replay player
 // @namespace    kovaaks-companion
-// @version      3
+// @version      5
 // @description  Adds a video icon next to every scenario you have a recorded replay of and plays the clip in a popup over the page.
 // @match        __MATCHES__
 // @grant        GM_getResourceText
-// @grant        GM_xmlhttpRequest
-// @resource     replays __WEB_DIR__/replays.js
+// @grant        unsafeWindow
+// @resource    replays __WEB_DIR__/replays.js
 // @run-at       document-idle
 // ==/UserScript==
 
@@ -20,9 +20,12 @@
   const byScenario = new Map(); // normalized scenario name -> replays, best score first
 
   // The app keeps this list in a file; the userscript manager reads it from disk each time a page loads.
-  const match = (GM_getResourceText('replays') || '').match(/KC_REPLAYS=(\[[\s\S]*\]);/);
+  let videoDir = ''; // the folder the clips are in, shown when the user is asked to pick it
+  const match = (GM_getResourceText('replays') || '').match(/KC_REPLAYS=(\{[\s\S]*\});/);
   if (match) {
-    for (const r of JSON.parse(match[1])) {
+    const data = JSON.parse(match[1]);
+    videoDir = data.dir;
+    for (const r of data.items) {
       const k = norm(r.scenario);
       if (!byScenario.has(k)) byScenario.set(k, []);
       byScenario.get(k).push(r);
@@ -58,6 +61,48 @@
     .observe(document.documentElement, { childList: true, subtree: true });
   scan();
 
+  // ---- the videos folder: the user picks it once per site and the browser remembers it -------------------------
+
+  // A page cannot read a file address, but a folder the user picked is readable, and a file from it plays without being read first.
+  const W = window.showDirectoryPicker ? window : unsafeWindow;
+  const DB = 'kovaaks-companion', STORE = 'handles', KEY = 'videos';
+
+  function store(mode, run) {
+    return new Promise((resolve, reject) => {
+      const open = W.indexedDB.open(DB, 1);
+      open.onupgradeneeded = () => open.result.createObjectStore(STORE);
+      open.onerror = () => reject(open.error);
+      open.onsuccess = () => {
+        const req = run(open.result.transaction(STORE, mode).objectStore(STORE));
+        req.onsuccess = () => { open.result.close(); resolve(req.result); };
+        req.onerror = () => reject(req.error);
+      };
+    });
+  }
+
+  // The remembered folder, or null when none is saved or the browser did not get its permission back (that asks, so it has to follow a click).
+  async function savedFolder() {
+    const h = await store('readonly', s => s.get(KEY)).catch(() => null);
+    if (!h) return null;
+    const opts = { mode: 'read' };
+    return (await h.queryPermission(opts)) === 'granted' || (await h.requestPermission(opts)) === 'granted' ? h : null;
+  }
+
+  // The dialog opens where the folder was last picked: the saved handle (even one whose permission is gone) tells the browser where that is.
+  async function pickFolder() {
+    const last = await store('readonly', s => s.get(KEY)).catch(() => null);
+    const h = await W.showDirectoryPicker(last ? { id: 'kc-videos', mode: 'read', startIn: last } : { id: 'kc-videos', mode: 'read' });
+    await store('readwrite', s => s.put(h, KEY)).catch(() => {});
+    return h;
+  }
+
+  async function clipIn(folder, path) {
+    const parts = path.split('/');
+    let dir = folder;
+    for (const p of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(p);
+    return (await dir.getFileHandle(parts[parts.length - 1])).getFile();
+  }
+
   // ---- popup over the page; a shadow root keeps the site's styles out ------------------------------------------
 
   let host = null;
@@ -87,7 +132,9 @@
         .body{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:12px;align-items:start}
         .stage{position:relative;display:flex;justify-content:center}
         video{display:block;width:100%;aspect-ratio:16/9;background:#000;border-radius:8px}
-        .note{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:#aeb3c2;background:rgba(0,0,0,.5);border-radius:8px}
+        .note{position:absolute;inset:0;display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;text-align:center;white-space:pre-line;overflow-wrap:anywhere;padding:24px;color:#aeb3c2;background:rgba(0,0,0,.5);border-radius:8px}
+        .note button{background:#2b5fb4;color:#fff;padding:4px 14px}
+        .note button:hover{background:#3470d0;color:#fff}
         .note[hidden]{display:none}
         .note.err{color:#ff9a9a}
         .list{overflow-y:auto;scrollbar-width:thin}
@@ -123,40 +170,59 @@
     onResize = fit;
     addEventListener('resize', onResize);
 
-    // A page cannot read a file address, so the userscript manager reads the clip from disk and the popup plays it from memory.
-    let current = 0, request = null, blobUrl = null;
+    // The clip is a file in the folder the user picked; the popup plays it straight from there, so it starts without reading the whole file first.
+    let current = 0, seq = 0, blobUrl = null;
     function release() {
-      if (request) { request.abort(); request = null; }
+      seq++;
       if (blobUrl) { URL.revokeObjectURL(blobUrl); blobUrl = null; }
     }
     cleanup = release;
-    function showNote(text, error) { note.textContent = text; note.className = 'note' + (error ? ' err' : ''); note.hidden = false; }
+    function showNote(text, error, action) {
+      note.textContent = text;
+      note.className = 'note' + (error ? ' err' : '');
+      if (action) {
+        const b = document.createElement('button');
+        b.textContent = action.label;
+        b.addEventListener('click', action.run);
+        note.append(b);
+      }
+      note.hidden = false;
+    }
 
-    function play(i) {
+    // Asks for the folder; a click on the button is what lets the browser show its folder dialog.
+    function askFolder(text, error) {
+      showNote(`${text}\n${videoDir}`, error, {
+        label: 'Select folder',
+        run: async () => {
+          try { await pickFolder(); } catch { return; } // the dialog was closed
+          play(current);
+        },
+      });
+    }
+
+    async function play(i) {
       release();
+      const mine = seq;
       current = i;
       [...list.children].forEach((row, k) => row.classList.toggle('on', k === i));
       video.removeAttribute('src'); video.load();
+      if (typeof W.showDirectoryPicker !== 'function') { showNote('This browser cannot open a folder of videos. Use Chrome or Edge.', true); return; }
       showNote('Loading the video...');
-      const mine = request = GM_xmlhttpRequest({
-        method: 'GET',
-        url: replays[i].video,
-        responseType: 'blob',
-        onload: r => {
-          if (request !== mine) return;
-          request = null;
-          if (!r.response || !r.response.size) { showNote('The video file is empty or gone.', true); return; }
-          blobUrl = URL.createObjectURL(r.response);
-          video.src = blobUrl;
-          note.hidden = true;
-          video.play().catch(() => {});
-        },
-        onerror: () => {
-          if (request !== mine) return;
-          request = null;
-          showNote('The video could not be read. In Tampermonkey, set Settings > Config mode: Advanced, then Security > "Allow scripts to access local files": All local files, and save.', true);
-        },
-      });
+      try {
+        const folder = await savedFolder();
+        if (mine !== seq) return;
+        if (!folder) { askFolder('Select the folder that has your replay videos:'); return; }
+        const file = await clipIn(folder, replays[i].video);
+        if (mine !== seq) return;
+        blobUrl = URL.createObjectURL(file);
+        video.src = blobUrl;
+        note.hidden = true;
+        video.play().catch(() => {});
+      } catch (e) {
+        if (mine !== seq) return;
+        if (e && e.name === 'NotFoundError') askFolder('The video was not found. Select the folder that has your replay videos:', true);
+        else showNote('The video could not be read: ' + (e && e.message || e), true);
+      }
     }
 
     replays.forEach((r, i) => {

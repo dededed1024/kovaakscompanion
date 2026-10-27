@@ -6,7 +6,8 @@ namespace KovaaksCompanion.Core.Web;
 
 /// <summary>
 /// The files the browser userscript works from, kept in the cache folder (all of it can be rebuilt from the archive): the list of replays that have a video
-/// and the userscript itself. The userscript manager reads them straight from disk, so playback needs neither the app running nor a server.
+/// and the userscript itself. The userscript manager reads them straight from disk, and the page reads the clips from a videos folder the user picks in the
+/// browser, so playback needs neither the app running nor a server.
 /// </summary>
 public static class ReplayWebFiles
 {
@@ -37,14 +38,16 @@ public static class ReplayWebFiles
         return path;
     }
 
-    /// <summary>The list as <c>window.KC_REPLAYS = [...]</c>; the userscript reads the file's text as a resource and takes the array out of it.</summary>
+    /// <summary>
+    /// The list as <c>window.KC_REPLAYS = {...}</c>; the userscript reads the file's text as a resource and takes the object out of it.
+    /// <c>dir</c> is the videos folder the user picks in the browser, and each <c>video</c> is a path inside it with forward slashes.
+    /// </summary>
     static string Index(ReplayArchive archive)
     {
         var items = archive.List()
-            .Select(i => (Info: i, Path: archive.VideoPath(i)))
-            .Where(x => x.Path is not null)
-            .Select(x => new { id = x.Info.Id, scenario = x.Info.Scenario, score = x.Info.Score, end = x.Info.End.ToString("s"), video = new Uri(x.Path!).AbsoluteUri });
-        return "window.KC_REPLAYS=" + JsonSerializer.Serialize(items) + ";\n";
+            .Where(i => archive.VideoPath(i) is not null)
+            .Select(i => new { id = i.Id, scenario = i.Scenario, score = i.Score, end = i.End.ToString("s"), video = i.VideoFile!.Replace('\\', '/') });
+        return "window.KC_REPLAYS=" + JsonSerializer.Serialize(new { dir = archive.VideoFolder, items }) + ";\n";
     }
 
     static string Resource(string name)
