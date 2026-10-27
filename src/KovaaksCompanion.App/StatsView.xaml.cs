@@ -526,8 +526,6 @@ public partial class StatsView : UserControl
         var tierBrushes = tierNames.Select(n => TierBrush(d, n)).ToList();
         var history = TierLadder.History(p.Scenarios.Select(sc => (byName[sc.Scenario], (IReadOnlyList<double>)sc.TierThresholds)));
         var entries = new List<RadarEntry>();
-        var blocks = new List<(string Scenario, int Tier, double Fraction)>();
-        var counts = new int[maxTier + 1];
         var cats = new List<BenchCategory>();
         foreach (var g in p.Subcategories.GroupBy(CatOf))
         {
@@ -544,15 +542,13 @@ public partial class StatsView : UserControl
                     entries.Add(new RadarEntry(CatOf(sub), sub.Name, sc.Scenario, TierLadder.ValueOf(best ?? 0, sc.TierThresholds), TierLadder.ValueOf(old ?? 0, sc.TierThresholds)));
                     var pos = TierLadder.TierOf(best ?? 0, sc.TierThresholds);
                     var rank = sc.TierThresholds.Count == 0 ? 0 : Math.Min(pos.Tier, maxTier);
-                    counts[rank]++;
-                    blocks.Add((sc.Scenario, rank, pos.Fraction));
                     return new BenchRow(sc.Scenario, best, fromCloud, local.Plays, local.LastPlayed, sc.TierThresholds);
                 }).ToList();
                 return new BenchSub(sub.Name.Trim(), ParseBrush(subDef?.Color), rows);
             }).ToList();
             cats.Add(new BenchCategory(g.Key, ParseBrush(def?.Color), subs));
         }
-        _ctx = new PlaylistCtx(item, d, p, report, cats, tierNames.Select(TierText.Label).ToList(), tierBrushes, history, counts, blocks, entries, cutoff, item.Theme);
+        _ctx = new PlaylistCtx(item, d, p, report, cats, tierNames.Select(TierText.Label).ToList(), tierBrushes, history, entries, cutoff, item.Theme);
         SetLayout("playlist");
         ShowPlaylist(keep);
         if (_scrollCat is { } cat)

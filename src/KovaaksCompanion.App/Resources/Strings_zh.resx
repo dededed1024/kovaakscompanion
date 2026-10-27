@@ -178,8 +178,6 @@
   <data name="Click again to delete the replay for good" xml:space="preserve"><value>再点一次将永久删除回放</value></data>
   <data name="Copied" xml:space="preserve"><value>已复制</value></data>
   <data name="{0} of {1} scenarios played · {2} runs · {3}" xml:space="preserve"><value>已玩 {0}/{1} 个场景 · {2} 局 · {3}</value></data>
-  <data name="{0} of {1} ranked" xml:space="preserve"><value>已定级 {0}/{1}</value></data>
-  <data name="{0} of {1} at {2}+" xml:space="preserve"><value>{2} 及以上：{0}/{1}</value></data>
   <data name="No runs" xml:space="preserve"><value>没有记录</value></data>
   <data name="30 days ago" xml:space="preserve"><value>30 天前</value></data>
   <data name="Other" xml:space="preserve"><value>其他</value></data>
@@ -230,7 +228,6 @@
   <data name="Sessions" xml:space="preserve"><value>训练</value></data>
   <data name="Charts" xml:space="preserve"><value>图表</value></data>
   <data name="Skill balance" xml:space="preserve"><value>技能均衡</value></data>
-  <data name="Scenarios by rank" xml:space="preserve"><value>各段位场景数</value></data>
   <data name="Open Settings" xml:space="preserve"><value>打开设置</value></data>
   <data name="No ranked playlist" xml:space="preserve"><value>没有段位播放列表</value></data>
   <data name="Favorite scenarios" xml:space="preserve"><value>收藏的场景</value></data>

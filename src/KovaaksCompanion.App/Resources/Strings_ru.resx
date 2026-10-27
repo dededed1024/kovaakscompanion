@@ -178,8 +178,6 @@
   <data name="Click again to delete the replay for good" xml:space="preserve"><value>Нажмите ещё раз, чтобы удалить реплей навсегда</value></data>
   <data name="Copied" xml:space="preserve"><value>Скопировано</value></data>
   <data name="{0} of {1} scenarios played · {2} runs · {3}" xml:space="preserve"><value>Сыграно сценариев: {0} из {1} · Ранов: {2} · {3}</value></data>
-  <data name="{0} of {1} ranked" xml:space="preserve"><value>Ранг есть у {0} из {1}</value></data>
-  <data name="{0} of {1} at {2}+" xml:space="preserve"><value>{2} и выше: {0} из {1}</value></data>
   <data name="No runs" xml:space="preserve"><value>Нет ранов</value></data>
   <data name="30 days ago" xml:space="preserve"><value>30 дней назад</value></data>
   <data name="Other" xml:space="preserve"><value>Другое</value></data>
@@ -230,7 +228,6 @@
   <data name="Sessions" xml:space="preserve"><value>Сессии</value></data>
   <data name="Charts" xml:space="preserve"><value>Графики</value></data>
   <data name="Skill balance" xml:space="preserve"><value>Баланс навыков</value></data>
-  <data name="Scenarios by rank" xml:space="preserve"><value>Сценарии по рангам</value></data>
   <data name="Open Settings" xml:space="preserve"><value>Открыть настройки</value></data>
   <data name="No ranked playlist" xml:space="preserve"><value>Нет рангового плейлиста</value></data>
   <data name="Favorite scenarios" xml:space="preserve"><value>Избранные сценарии</value></data>

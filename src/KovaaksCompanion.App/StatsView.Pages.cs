@@ -17,7 +17,7 @@ namespace KovaaksCompanion.App;
 public partial class StatsView
 {
     sealed record PlaylistCtx(BrowserItem Item, Difficulty D, BenchmarkProgress P, PlaylistReport Report, List<BenchCategory> Cats, List<string> Names, List<Brush> Brushes,
-        List<(DateTime Day, double Value)> History, int[] Counts, List<(string Scenario, int Tier, double Fraction)> Blocks, List<RadarEntry> Entries, DateTime Cutoff, Brush Theme)
+        List<(DateTime Day, double Value)> History, List<RadarEntry> Entries, DateTime Cutoff, Brush Theme)
     {
         public Dictionary<DateTime, int> Plays { get; } = Report.PlaysPerDay().GroupBy(x => x.Day.Date).ToDictionary(g => g.Key, g => g.Sum(x => x.Plays));
     }
@@ -323,7 +323,6 @@ public partial class StatsView
         page.Children.Add(BuildActivity(c));
         if (BuildStats(c, RunSetPart.Charts) is { } runCharts) page.Children.Add(runCharts);
         page.Children.Add(BuildBalance(c, cats));
-        page.Children.Add(BuildBlocks(c));
         return page;
     }
 
@@ -350,16 +349,6 @@ public partial class StatsView
         var recent = plays.Where(r => r.End >= c.Cutoff).ToList();
         (string, IReadOnlyList<RunRecord>)? focus = recent.Count > 0 && recent.Count < plays.Count ? (L.T("Last 30 days"), recent) : null;
         return new Border { Margin = new Thickness(0, 0, 0, CardGap), Child = RunSetPanel(plays, pbs, focus, focus == null ? null : (L.T("All time"), plays), part: part, runChart: false) };
-    }
-
-    UIElement BuildBlocks(PlaylistCtx c)
-    {
-        var total = c.Counts.Sum();
-        var r = Math.Clamp(c.P.OverallTier, 0, c.Names.Count);
-        var blocks = new TierBlocksChart { Margin = new Thickness(0, 0, 0, 8) };
-        blocks.SizeChanged += (_, ev) => { var h = Math.Clamp(ev.NewSize.Width * 0.44, 300, 560); if (double.IsNaN(blocks.Height) || Math.Abs(blocks.Height - h) > 1) blocks.Height = h; };
-        blocks.Set(c.Blocks, c.Names, c.Brushes);
-        return TitledCard("Scenarios by rank", r == 0 ? L.F("{0} of {1} ranked", total - c.Counts[0], total) : L.F("{0} of {1} at {2}+", c.Counts.Skip(r).Sum(), total, c.Names[r - 1]), blocks);
     }
 
     FrameworkElement ProgressChart(PlaylistCtx c)
