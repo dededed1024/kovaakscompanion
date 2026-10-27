@@ -400,7 +400,7 @@ public sealed class BenchmarkTable : UserControl
                 // The outer ends are rounded and inset by 2; where a tier continues into the next, the seam runs as a thin diagonal from top right to bottom left, so the middle tiers are parallelograms.
                 var first = k == 1;
                 var last = k == rank;
-                var path = new System.Windows.Shapes.Path { Fill = Vivid(tierBrushes[k - 1], Theme.IsLight ? 0.6 : 0.5), IsHitTestVisible = false };
+                var path = new System.Windows.Shapes.Path { Fill = Vivid(rowBrush ?? tierBrushes[k - 1], Theme.IsLight ? 0.6 : 0.5), IsHitTestVisible = false };
                 cell.SizeChanged += (_, e) => path.Data = TierShape(e.NewSize.Width, e.NewSize.Height, first, last);
                 var canvas = new Canvas { IsHitTestVisible = false };
                 canvas.Children.Add(path);
