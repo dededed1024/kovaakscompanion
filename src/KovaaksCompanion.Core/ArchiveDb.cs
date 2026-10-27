@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using KovaaksCompanion.Core.Benchmarks;
@@ -451,7 +452,7 @@ internal sealed class ArchiveDb(string file)
         catch
         {
             // A full disk or a failed COMMIT can end the transaction by itself; only a transaction that is still open is rolled back.
-            try { if (SQLitePCL.raw.sqlite3_get_autocommit(c.Handle) == 0) Exec(c, "ROLLBACK"); } catch (SqliteException e) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("archive rollback", e, KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Low); }
+            try { if (SQLitePCL.raw.sqlite3_get_autocommit(c.Handle) == 0) Exec(c, "ROLLBACK"); } catch (SqliteException e) { AppLog.Error("archive rollback", e); }
             throw;
         }
     }

@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 ﻿using System.IO;
 using System.Text.Json;
 using System.Windows;
@@ -84,7 +85,7 @@ public partial class StatsView
                 ShowSync(0, 0);
                 var bests = await _api.GetBestScoresAsync(user, ct);
                 if (bests.Count == 0) return;
-                await Task.Run(() => { try { store.SaveCloudBests(bests); } catch (IOException e) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("cloud bests save", e); } });
+                await Task.Run(() => { try { store.SaveCloudBests(bests); } catch (IOException e) { AppLog.Error("cloud bests save", e); } });
                 foreach (var (n, v) in bests)
                 {
                     if (v > _archivedBest.GetValueOrDefault(n)) _archivedBest[n] = v;
@@ -109,7 +110,7 @@ public partial class StatsView
             if (_popupOpen && _popupItem is { } open) ShowBenchmark(open, true);
         }
         catch (OperationCanceledException) { }
-        catch (Exception e) when (!ct.IsCancellationRequested) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("cloud load", e, e is System.Net.Http.HttpRequestException ? KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Low : KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Medium); } // offline or rate limited: the next reload tries again
+        catch (Exception e) when (!ct.IsCancellationRequested) { AppLog.Error("cloud load", e); } // offline or rate limited: the next reload tries again
         finally { _syncing = false; HideSync(); UpdateTierMarks(false); } // server-side changes are no celebration
     }
 
@@ -199,13 +200,13 @@ public partial class StatsView
                     changed |= RememberCloud(n, store.WithCached(n, l));
                 }
                 catch (System.Net.Http.HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.TooManyRequests) { } // still limited after the retries: not an app bug, try again later
-                catch (Exception e) when (!ct.IsCancellationRequested) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("scores load", e); } // offline or rate limited: keep what is cached
+                catch (Exception e) when (!ct.IsCancellationRequested) { AppLog.Error("scores load", e); } // offline or rate limited: keep what is cached
                 finally { gate.Release(); progress?.Report(++finished); }
             }));
-            if (fresh.Count > 0) _ = Task.Run(() => { try { store.SaveScoresBatch(fresh); } catch (IOException e) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("scores save", e); } });
+            if (fresh.Count > 0) _ = Task.Run(() => { try { store.SaveScoresBatch(fresh); } catch (IOException e) { AppLog.Error("scores save", e); } });
         }
         catch (OperationCanceledException) { }
-        catch (Exception e) when (!ct.IsCancellationRequested) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("scores reload", e); }
+        catch (Exception e) when (!ct.IsCancellationRequested) { AppLog.Error("scores reload", e); }
         finally { foreach (var n in stale) _cloudInflight.Remove(n); }
         return changed;
     }

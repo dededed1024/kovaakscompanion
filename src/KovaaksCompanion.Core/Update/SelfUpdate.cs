@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 using System.Diagnostics;
 using System.Security.Cryptography;
 
@@ -83,6 +84,6 @@ public static class SelfUpdate
 
     static void TryDelete(string path)
     {
-        try { File.Delete(path); } catch (IOException e) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("update cleanup", e, KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Low); } catch (UnauthorizedAccessException e) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("update cleanup", e, KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Low); }
+        try { File.Delete(path); } catch (IOException e) { AppLog.Error("update cleanup", e); } catch (UnauthorizedAccessException e) { AppLog.Error("update cleanup", e); }
     }
 }

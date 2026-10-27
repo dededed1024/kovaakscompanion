@@ -60,7 +60,6 @@ public sealed class AppHost : IDisposable
             // the favorites move into the archive database; the views redraw once they are loaded
             _app.Dispatcher.BeginInvoke(() => { if (Ui.UseArchive(archiveDb, _uiFile)) UiChanged?.Invoke(); });
         });
-        ErrorReporter.Configure(Http, App.CurrentVersion.ToString(3), () => _settings.SendErrorReports);
     }
     readonly string _uiFile;
     readonly bool _settingsDirty;
@@ -159,11 +158,11 @@ public sealed class AppHost : IDisposable
             var tier = TierLadder.TierOf(run.Score, hits.Sc.TierThresholds).Tier;
             return tier > 0 && tier < hits.Data!.TierNames.Count ? hits.Data.TierNames[tier] : null;
         }
-        catch (Exception e) { ErrorReporter.Report("tier lookup", e); return null; }
+        catch (Exception e) { AppLog.Error("tier lookup", e); return null; }
     }
 
-    // Every app error goes through ErrorReporter (log + automatic report), so none is filtered out.
-    void SetError(string m, Exception? e = null, ErrorSeverity severity = ErrorSeverity.Medium) { _lastError = m; ErrorReporter.Report(m, e ?? new VideoProblem(m), severity); }
+    // Every app error is logged, so none is filtered out.
+    void SetError(string m, Exception? e = null) { _lastError = m; AppLog.Write("error", e == null ? m : $"{m}: {e}"); }
 
     readonly object _cleanGate = new();
 
@@ -338,7 +337,7 @@ public sealed class AppHost : IDisposable
         {
             var libobs = ResolveLibobs();
             if (libobs != null) StartVideo(libobs);
-            else SetError("libobs missing (video disabled)", severity: ErrorSeverity.High);
+            else SetError("libobs missing (video disabled)");
         });
 
         _saver = new ReplaySaver(_settings.OpenReplays(), _buffer, ClockAnchor.Now,
@@ -392,7 +391,7 @@ public sealed class AppHost : IDisposable
         };
         _watcher.AccessDenied += folder =>
         {
-            if (!AccessGuard.Grant(folder, false)) { SetError("stats folder: access denied: " + folder, severity: ErrorSeverity.Low); return; }
+            if (!AccessGuard.Grant(folder, false)) { SetError("stats folder: access denied: " + folder); return; }
             AppLog.Write("stats", "read access granted: " + folder);
             _app.Dispatcher.Invoke(() => { _watcher?.Dispose(); StartWatcher(); });
         };
@@ -470,7 +469,7 @@ public sealed class AppHost : IDisposable
             ObsRoot = obsRoot, BufferDir = _settings.BufferFolder, Quality = _settings.VideoQuality.ToCq(), MaxHeight = _settings.VideoQuality.MaxHeight(),
             Fps = _settings.VideoFps,
         }, () => WebcamConfig.From(_settings));
-        _video.Error += m => SetError("video: " + m, severity: ErrorSeverity.High);
+        _video.Error += m => SetError("video: " + m);
         _video.GameLaunched += Live.Launch;
         _video.GameExited += () =>
         {
@@ -481,13 +480,13 @@ public sealed class AppHost : IDisposable
         };
         _video.StateChanged += () => GameStateChanged?.Invoke();
         _video.GameSized += (w, h) => { if (w != _settings.GameWidth || h != _settings.GameHeight) ApplySettings(_settings with { GameWidth = w, GameHeight = h }); };
-        try { _video.Start(); } catch (Exception e) { SetError("video: " + e.Message, e, ErrorSeverity.High); }
+        try { _video.Start(); } catch (Exception e) { SetError("video: " + e.Message, e); }
     }
 
     void StartCapture()
     {
         try { _capture = new RawInputCapture(_buffer.Add); _capture.Start(); }
-        catch (Exception e) { _capture = null; SetError("mouse: " + e.Message, e, ErrorSeverity.High); }
+        catch (Exception e) { _capture = null; SetError("mouse: " + e.Message, e); }
     }
 
     void BuildTray()
@@ -584,7 +583,7 @@ public sealed class AppHost : IDisposable
             (AppSettings.DefaultDataFolder, true),
             (_settings.KovaaksPath.Trim().Length > 0 ? _settings.StatsFolder : "", false),
         ]);
-        foreach (var b in blocked) SetError("access denied: " + b, severity: ErrorSeverity.Low);
+        foreach (var b in blocked) SetError("access denied: " + b);
     }
 
     public void ApplySettings(AppSettings s)

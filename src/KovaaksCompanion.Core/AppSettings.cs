@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -32,8 +33,6 @@ public sealed record AppSettings
     /// <summary>UI size in percent of the design size.</summary>
     public int UiScale { get; init; } = 100;
     public const int MinUiScale = 75, MaxUiScale = 150;
-    /// <summary>Posts unhandled errors (no personal data) to the developer.</summary>
-    public bool SendErrorReports { get; init; } = true;
     /// <summary>Downloads and installs a newer release at startup without asking.</summary>
     public bool AutoUpdate { get; init; } = true;
     /// <summary>Version that ran last; a lower value at startup means the app was just updated. Empty on a fresh install.</summary>
@@ -200,7 +199,7 @@ public sealed record AppSettings
         }
         catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException)
         {
-            if (File.Exists(path)) Diagnostics.ErrorReporter.Report("settings load " + path, e); // unreadable or corrupt, not just first run
+            if (File.Exists(path)) AppLog.Error("settings load " + path, e); // unreadable or corrupt, not just first run
             return new();
         }
     }

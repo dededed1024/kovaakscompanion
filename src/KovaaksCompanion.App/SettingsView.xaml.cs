@@ -28,12 +28,6 @@ public partial class SettingsView : UserControl
     {
         InitializeComponent();
         _host = host;
-        if (BuildConfig.DiscordInviteUrl.Length > 0)
-        {
-            DiscordButton.Tag = BuildConfig.DiscordInviteUrl;
-            DiscordButton.ToolTip = BuildConfig.DiscordInviteUrl.Replace("https://", "");
-            DiscordButton.Visibility = DiscordPrompt.Visibility = Visibility.Visible;
-        }
         _commit.Tick += (_, _) => Commit();
         Load();
         host.GameStateChanged += OnGameState;
@@ -68,7 +62,6 @@ public partial class SettingsView : UserControl
         PbOnly.IsChecked = s.VideoPbOnly;
         foreach (RadioButton r in FolderBar.Children) r.IsChecked = (string)r.Tag == (s.VideoByRun ? "Run" : "Session");
         AutoStart.IsChecked = Autostart.IsOn();
-        ErrorReports.IsChecked = s.SendErrorReports;
         AutoUpdate.IsChecked = s.AutoUpdate;
         SizeCamFrame(s);
         CamOn.IsChecked = s.WebcamEnabled;
@@ -264,7 +257,6 @@ public partial class SettingsView : UserControl
         {
             KovaaksPath = Kovaaks.Text.Trim(), DataFolder = Data.Text.Trim() == cur.DataRoot ? cur.DataFolder : Data.Text.Trim(), SteamId = !SteamValid() || Steam.Text.Trim() == cur.EffectiveSteamId ? cur.SteamId : Steam.Text.Trim(),
             StartWithWindows = AutoStart.IsChecked == true,
-            SendErrorReports = ErrorReports.IsChecked == true,
             AutoUpdate = AutoUpdate.IsChecked == true,
             VideoQuality = QualityBar.Children.OfType<RadioButton>().FirstOrDefault(r => r.IsChecked == true)?.Tag is string t
                 && Enum.TryParse<VideoQuality>(t, out var q) ? q : cur.VideoQuality,
@@ -671,8 +663,6 @@ public partial class SettingsView : UserControl
     void OnKeepPbLabel(object sender, MouseButtonEventArgs e) => KeepPb.IsChecked = KeepPb.IsChecked != true;
     void OnAutoUpdateLabel(object sender, MouseButtonEventArgs e) => AutoUpdate.IsChecked = AutoUpdate.IsChecked != true;
 
-    void OnErrorReportsLabel(object sender, MouseButtonEventArgs e) => ErrorReports.IsChecked = ErrorReports.IsChecked != true;
-
     async void OnCheckUpdate(object sender, RoutedEventArgs e)
     {
         var tok = _tok;
@@ -703,76 +693,7 @@ public partial class SettingsView : UserControl
         else { CheckBtn.Content = CheckText; CheckBtn.ClearValue(BackgroundProperty); CheckBtn.ClearValue(ForegroundProperty); }
     }
 
-    static DateTime _lastReport = DateTime.MinValue;
-    bool _reporting;
-
     // The feedback popup grows with the window so it does not look tiny on a high-resolution monitor.
-    void OnReportOverlaySized(object sender, SizeChangedEventArgs e)
-    {
-        ReportCard.MaxWidth = Math.Clamp(e.NewSize.Width * 0.45, 480, 900);
-        ReportText.MinHeight = Math.Clamp(e.NewSize.Height * 0.16, 120, 300);
-        ReportLogScroll.MaxHeight = Math.Clamp(e.NewSize.Height * 0.12, 110, 260);
-    }
-
-    void OnReportText(object sender, TextChangedEventArgs e)
-    {
-        ReportBtn.IsEnabled = !_reporting && !string.IsNullOrWhiteSpace(ReportText.Text);
-        ReportCount.Text = $"{ReportText.Text.Length}/{ReportText.MaxLength}";
-    }
-
-    async void OnReport(object sender, RoutedEventArgs e)
-    {
-        var tok = _tok;
-        _reporting = true;
-        ReportBtn.IsEnabled = false;
-        if (DateTime.UtcNow - _lastReport < TimeSpan.FromSeconds(10))
-            ReportBtn.Content = L.T("Please try again in a moment");
-        else
-        {
-            ReportBtn.Content = L.T("Sending…");
-            var ok = await BugReport.Send(Http, ReportText.Text.Trim(), Current.ToString(3), DescribeEnvironment());
-            if (tok != _tok) { _reporting = false; return; }
-            if (ok) { _lastReport = DateTime.UtcNow; ReportText.Clear(); }
-            ReportBtn.Content = ok ? L.T("Sent") : L.T("Could not send");
-        }
-        await Task.Delay(ReportBtn.Content as string == L.T("Sent") ? 1200 : 3000);
-        if (tok != _tok) { _reporting = false; return; }
-        _reporting = false;
-        if (string.IsNullOrWhiteSpace(ReportText.Text)) ReportOverlay.Visibility = Visibility.Collapsed;
-        ResetReport();
-    }
-
-    void OnReportOpen(object sender, RoutedEventArgs e)
-    {
-        ResetReport();
-        // The information exactly as the report carries it: the header line, the environment and the scrubbed log tail.
-        ReportInfo.Text = BugReport.Scrub(L.F("Version {0}", Current.ToString(3)) + "\n" + DescribeEnvironment());
-        var log = BugReport.LogPreview();
-        ReportLog.Text = log ?? "";
-        ReportLogPanel.Visibility = string.IsNullOrWhiteSpace(log) ? Visibility.Collapsed : Visibility.Visible;
-        ReportOverlay.Visibility = Visibility.Visible;
-        ReportText.Focus();
-    }
-
-    void OnReportCancel(object sender, RoutedEventArgs e)
-    {
-        if (!_reporting) ReportOverlay.Visibility = Visibility.Collapsed;
-    }
-
-    string DescribeEnvironment()
-    {
-        var s = _host.Settings;
-        var dpi = VisualTreeHelper.GetDpi(this);
-        var res = $"{SystemParameters.PrimaryScreenWidth * dpi.DpiScaleX:0}x{SystemParameters.PrimaryScreenHeight * dpi.DpiScaleY:0}";
-        return EnvironmentInfo.Describe(new(res, s.VideoQuality.ToString(), s.VideoFps, s.WebcamEnabled, s.Webcams.Count));
-    }
-
-    void ResetReport()
-    {
-        ReportBtn.Content = L.T("Send");
-        ReportBtn.IsEnabled = !_reporting && !string.IsNullOrWhiteSpace(ReportText.Text);
-    }
-
     // ---- popup shell -------------------------------------------------------------------------------------------
 
     void OnSized(object sender, SizeChangedEventArgs e) => Card.MaxHeight = Math.Max(0, e.NewSize.Height - 48 - 24);
@@ -796,7 +717,7 @@ public partial class SettingsView : UserControl
         try { Clipboard.SetText(text); }
         catch (System.Runtime.InteropServices.COMException ex)
         {
-            KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("clipboard", ex, KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Low);
+            AppLog.Error("clipboard", ex);
             return;
         }
         if (sender is Button { Tag: not "flash" } btn) FlashCheck(btn);
@@ -835,10 +756,6 @@ public partial class SettingsView : UserControl
         VersionCaption.Text = L.F("Version {0}", Current.ToString(3));
         var tok = ++_tok;
         ResetCheck();
-        _reporting = false;
-        ResetReport();
-        ReportOverlay.Visibility = Visibility.Collapsed;
-        ReportPanel.Visibility = BugReport.Enabled ? Visibility.Visible : Visibility.Collapsed;
         Scrim.BeginAnimation(OpacityProperty, null); Scrim.Opacity = 0;
         Card.BeginAnimation(OpacityProperty, null); Card.Opacity = 0;
         Scale.BeginAnimation(ScaleTransform.ScaleXProperty, null); Scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
@@ -855,7 +772,6 @@ public partial class SettingsView : UserControl
     public bool Close()
     {
         if (!_open) return false;
-        if (ReportOverlay.Visibility == Visibility.Visible && !_reporting) { ReportOverlay.Visibility = Visibility.Collapsed; return true; }
         _open = false;
         Popups.Closed(this);
         Animate(false, ++_tok);

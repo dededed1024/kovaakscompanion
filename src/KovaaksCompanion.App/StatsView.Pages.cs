@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 ﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;

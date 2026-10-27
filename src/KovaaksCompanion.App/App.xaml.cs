@@ -50,7 +50,7 @@ public partial class App : Application
                     AllowSetForegroundWindow(-1);
                     ev.Set();
                 }
-                catch (Exception ex) { ErrorReporter.Report("signal show", ex, ErrorSeverity.Low); }
+                catch (Exception ex) { AppLog.Error("signal show", ex); }
                 Shutdown();
                 return;
             }
@@ -69,7 +69,7 @@ public partial class App : Application
     static void Unhandled(string title, Exception? ex)
     {
         if (ex == null) return;
-        ErrorReporter.Report(title, ex, ErrorSeverity.Critical);
+        AppLog.Error(title, ex);
     }
 
     /// <summary>Waits for the previous instance to release the mutex; abandoned counts as acquired.</summary>
@@ -81,7 +81,7 @@ public partial class App : Application
 
     static void SignalQuit()
     {
-        try { using var q = new EventWaitHandle(false, EventResetMode.AutoReset, QuitEventName); q.Set(); } catch (Exception e) { ErrorReporter.Report("signal quit", e, ErrorSeverity.Low); }
+        try { using var q = new EventWaitHandle(false, EventResetMode.AutoReset, QuitEventName); q.Set(); } catch (Exception e) { AppLog.Error("signal quit", e); }
     }
 
     /// <summary>The running instance's published version; null when unreadable.</summary>
@@ -95,7 +95,7 @@ public partial class App : Application
             var n = s.Read(buf, 0, buf.Length);
             return UpdateCheck.ParseVersion(System.Text.Encoding.UTF8.GetString(buf, 0, n).TrimEnd('\0'));
         }
-        catch (Exception e) { ErrorReporter.Report("running version", e); return null; }
+        catch (Exception e) { AppLog.Error("running version", e); return null; }
     }
 
     /// <summary>Publishes this version for later launches; the map lives until exit.</summary>
@@ -109,7 +109,7 @@ public partial class App : Application
             s.Write(new byte[64], 0, 64); s.Position = 0;
             s.Write(bytes, 0, bytes.Length);
         }
-        catch (Exception e) { ErrorReporter.Report("publish version", e); }
+        catch (Exception e) { AppLog.Error("publish version", e); }
     }
 
     protected override void OnExit(ExitEventArgs e)

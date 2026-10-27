@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 using System.Text.Json;
 using KovaaksCompanion.Core.Library;
 
@@ -33,7 +34,7 @@ public sealed partial class ReplayArchive(string archiveFolder, string videoFold
                 var info = ReplayInfo.FromJson(json);
                 list.Add(info.VideoFile is not null && VideoPath(info) is null ? info with { VideoFile = null } : info);
             }
-            catch (Exception e) when (e is ReplayFormatException or JsonException) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("replay archive read", e); }
+            catch (Exception e) when (e is ReplayFormatException or JsonException) { AppLog.Error("replay archive read", e); }
         }
         return list;
     }
@@ -158,7 +159,7 @@ public sealed partial class ReplayArchive(string archiveFolder, string videoFold
         if (Path.GetDirectoryName(videoFile) is not { Length: > 0 } dir) return;
         var path = Path.Combine(videoFolder, dir);
         try { if (Directory.Exists(path) && !Directory.EnumerateFileSystemEntries(path).Any()) Directory.Delete(path); }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("replay archive", e); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { AppLog.Error("replay archive", e); }
     }
 
     /// <summary>

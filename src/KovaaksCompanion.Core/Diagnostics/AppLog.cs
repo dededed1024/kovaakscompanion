@@ -40,6 +40,9 @@ public static class AppLog
         }
     }
 
+    /// <summary>Logs a caught error under the "error" tag.</summary>
+    public static void Error(string title, Exception ex) => Write("error", $"{title}: {ex}");
+
     /// <summary>Last <paramref name="n"/> non-empty lines of <paramref name="text"/>.</summary>
     public static string Tail(string text, int n = 50) =>
         string.Join(Environment.NewLine, text.Split('\n').Select(l => l.TrimEnd('\r')).Where(l => l.Length > 0).TakeLast(n));

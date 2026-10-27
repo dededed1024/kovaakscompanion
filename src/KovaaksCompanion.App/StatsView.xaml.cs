@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 ﻿using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
@@ -603,7 +604,7 @@ public partial class StatsView : UserControl
         if (!string.IsNullOrWhiteSpace(hex))
         {
             try { var b = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex)); b.Freeze(); return b; }
-            catch (FormatException e) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("stats view", e, KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Low); }
+            catch (FormatException e) { AppLog.Error("stats view", e); }
         }
         return (Brush)FindResource("Dim");
     }

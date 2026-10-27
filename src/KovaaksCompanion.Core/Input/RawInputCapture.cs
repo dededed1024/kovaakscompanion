@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -59,7 +60,7 @@ public sealed class RawInputCapture : IDisposable
             if (!RegisterRawInputDevices([rid], 1, (uint)Marshal.SizeOf<RAWINPUTDEVICE>()))
                 throw new System.ComponentModel.Win32Exception();
         }
-        catch (Exception e) { Diagnostics.ErrorReporter.Report("raw input", e, Diagnostics.ErrorSeverity.High); fail(e); ready.Set(); return; }
+        catch (Exception e) { AppLog.Error("raw input", e); fail(e); ready.Set(); return; }
         ready.Set();
         while (GetMessage(out var msg, IntPtr.Zero, 0, 0) > 0) { TranslateMessage(ref msg); DispatchMessage(ref msg); }
     }

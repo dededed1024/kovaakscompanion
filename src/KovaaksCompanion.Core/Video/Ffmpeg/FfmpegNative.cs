@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace KovaaksCompanion.Core.Video.Ffmpeg;
@@ -163,7 +164,7 @@ public static unsafe class FfmpegNative
             catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException)
             {
                 LastError = e.Message;
-                Diagnostics.ErrorReporter.Report("ffmpeg load", e, Diagnostics.ErrorSeverity.High);
+                AppLog.Error("ffmpeg load", e);
                 return false;
             }
         }

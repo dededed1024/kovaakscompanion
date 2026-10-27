@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -312,7 +313,7 @@ public sealed unsafe class FfmpegPlayer : IDisposable
     void DecodeLoop()
     {
         try { Decode(); }
-        catch (Exception e) { Error = e.ToString(); KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("ffmpeg decode", e, KovaaksCompanion.Core.Diagnostics.ErrorSeverity.High); }
+        catch (Exception e) { Error = e.ToString(); AppLog.Error("ffmpeg decode", e); }
     }
 
     void Decode()

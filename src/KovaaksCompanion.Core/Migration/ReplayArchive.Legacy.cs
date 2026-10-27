@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 using System.Text.Json;
 
 namespace KovaaksCompanion.Core.Replays;
@@ -18,7 +19,7 @@ public sealed partial class ReplayArchive
         foreach (var dir in LegacyDirs(roots))
         {
             try { list.Add(LegacyReplays.ReadInfo(dir)); }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException or ReplayFormatException or JsonException) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("legacy replay import", e); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or ReplayFormatException or JsonException) { AppLog.Error("legacy replay import", e); }
         }
         return list;
     }

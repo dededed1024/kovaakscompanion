@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -88,7 +89,7 @@ public partial class StatsView
             _profileCapturing = false;
             foreach (var c in charts) { c.EndManualDrift(); c.Marquee = _host.Ui.ProfileAnimated; }
             if (_profileAddBox != null) { _profileAddBox.Visibility = Visibility.Visible; RefitProfile(); }
-            if (!ok) { try { File.Delete(file); } catch (Exception e) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("profile webp delete", e, KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Low); } }
+            if (!ok) { try { File.Delete(file); } catch (Exception e) { AppLog.Error("profile webp delete", e); } }
             _webpBusy = false;
         }
         if (ok)

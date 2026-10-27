@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 ﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -313,6 +314,6 @@ public partial class StatsView
             if (!byKind && against is { } a && !ReferenceEquals(a.Runs, focus.Runs) && SpeedsOf(a.Runs, all) is { Count: > 0 } other) lines.Add(((Brush)FindResource("Red"), a.Label, other));
             if (lines.Count > 0) host.Child = SpeedCard(lines);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Core.Diagnostics.ErrorReporter.Report("run set speed", e, Core.Diagnostics.ErrorSeverity.Low); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { AppLog.Error("run set speed", e); }
     }
 }

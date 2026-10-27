@@ -17,13 +17,6 @@ internal static class TierCalculationEngine
     public static TierResult Compute(TierSetup setup, IReadOnlyList<string> rankNames, IReadOnlyList<SubcategoryProgress> parts)
         => new Run(setup, rankNames, parts).Compute();
 
-    /// <summary>
-    /// Returns the energy total shown for energy-style playlists, or null when the playlist does not use that
-    /// method, has no scenarios, or the total is not positive.
-    /// </summary>
-    public static double? VoltaicEnergy(TierSetup setup, IReadOnlyList<string> rankNames, IReadOnlyList<SubcategoryProgress> parts)
-        => new Run(setup, rankNames, parts).VoltaicEnergy();
-
     // ------------------------------------------------------------------------------------------------
     // Small numeric helpers
     // ------------------------------------------------------------------------------------------------
@@ -632,15 +625,6 @@ internal static class TierCalculationEngine
             if (key == "advanced" && tiers.Count > 0 && result.Tier >= tiers.Count)
                 result = Energy(ladder, NoStrafe, lower, double.PositiveInfinity, null, true).Result;
             return result;
-        }
-
-        public double? VoltaicEnergy()
-        {
-            if (setup.Method != "vt-energy" || n == 0) return null;
-            bool advanced = key == "advanced";
-            var (total, _) = Energy(VtLadder(), NoStrafe, VtLower(),
-                advanced ? double.PositiveInfinity : 1, null, advanced);
-            return total > 0 ? total : null;
         }
 
         private TierResult Hewchy()

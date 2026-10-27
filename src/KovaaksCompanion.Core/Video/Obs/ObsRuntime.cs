@@ -71,7 +71,7 @@ public static unsafe class ObsRuntime
                 // the encoder plugins probe their GPU through obs-*-test.exe, which they look up next to the host exe; keep the copies only while they load
                 var helpers = StageEncoderProbes(bin);
                 try { ObsNative.obs_load_all_modules(); ObsNative.obs_post_load_modules(); }
-                finally { foreach (var h in helpers) { try { File.Delete(h); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { ErrorReporter.Report("obs helper delete", e, ErrorSeverity.Low); } } RemoveStrayPluginDir(); }
+                finally { foreach (var h in helpers) { try { File.Delete(h); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { AppLog.Error("obs helper delete", e); } } RemoveStrayPluginDir(); }
                 return true;
             }
             catch (Exception e) when (e is DllNotFoundException or BadImageFormatException or EntryPointNotFoundException)
@@ -92,7 +92,7 @@ public static unsafe class ObsRuntime
             var dir = host == null ? null : Path.Combine(host, "win-capture");
             if (dir != null && Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any()) Directory.Delete(dir);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { ErrorReporter.Report("obs stray plugin dir", e, ErrorSeverity.Low); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { AppLog.Error("obs stray plugin dir", e); }
     }
 
     /// <summary>Why the GPU probes could not be placed for the encoder plugins; empty when they were.</summary>
@@ -111,7 +111,7 @@ public static unsafe class ObsRuntime
             {
                 // Without the probe the encoder plugin cannot start it ("CreateProcessW failed: 2") and registers no encoder.
                 ProbeIssue = $"cannot copy {Path.GetFileName(src)} next to the app ({host}): {e.Message}";
-                ErrorReporter.Report("obs probe stage", e, ErrorSeverity.High);
+                AppLog.Error("obs probe stage", e);
             }
         }
         return copies;
@@ -220,9 +220,9 @@ public static unsafe class ObsRuntime
             var msg = Marshal.PtrToStringUTF8((nint)buf) ?? "";
             // info lines only for KC_OBS_LOG=1 or the game capture source (its window matching is the usual reason for an empty frame)
             if (level > MaxLogLevel && !msg.Contains("window-capture", StringComparison.Ordinal)) return;
-            if (level <= ObsNative.LogError) ErrorReporter.Report("libobs", new VideoProblem(msg), ErrorSeverity.High);
+            if (level <= ObsNative.LogError) AppLog.Write("error", "libobs: " + msg);
             AppLog.Write("obs", (level <= ObsNative.LogError ? "error: " : level <= ObsNative.LogWarning ? "warn: " : "info: ") + msg);
         }
-        catch (Exception e) { ErrorReporter.Report("libobs log", e, ErrorSeverity.Low); }
+        catch (Exception e) { AppLog.Error("libobs log", e); }
     }
 }

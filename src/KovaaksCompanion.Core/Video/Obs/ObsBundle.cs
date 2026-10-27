@@ -43,7 +43,7 @@ public static partial class ObsBundle
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException)
             {
-                ErrorReporter.Report($"obs extract to {root}", e, ErrorSeverity.Medium);
+                AppLog.Error($"obs extract to {root}", e);
             }
         }
         return null;
@@ -73,9 +73,9 @@ public static partial class ObsBundle
             File.WriteAllText(Path.Combine(tmp, DoneMarker), hash);
             if (!File.Exists(Path.Combine(tmp, "bin", "64bit", "obs.dll"))) throw new InvalidDataException("bundle has no obs.dll");
             try { Directory.Move(tmp, dir); }
-            catch (IOException e) when (IsComplete(dir)) { ErrorReporter.Report("obs bundle move (another instance won the race)", e, ErrorSeverity.High); }
+            catch (IOException e) when (IsComplete(dir)) { AppLog.Error("obs bundle move (another instance won the race)", e); }
         }
-        finally { try { if (Directory.Exists(tmp)) Directory.Delete(tmp, true); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { ErrorReporter.Report("obs bundle tmp delete", e, ErrorSeverity.Low); } }
+        finally { try { if (Directory.Exists(tmp)) Directory.Delete(tmp, true); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { AppLog.Error("obs bundle tmp delete", e); } }
         return dir;
     }
 
@@ -92,9 +92,9 @@ public static partial class ObsBundle
                 var name = Path.GetFileName(old);
                 if (name == keep || !KeyName().IsMatch(name)) continue;
                 try { Directory.Delete(old, true); }
-                catch (Exception e) when (e is IOException or UnauthorizedAccessException) { ErrorReporter.Report($"obs stale {old} not removed", e, ErrorSeverity.Low); }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException) { AppLog.Error($"obs stale {old} not removed", e); }
             }
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { ErrorReporter.Report($"obs cleanup {root}", e, ErrorSeverity.Low); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { AppLog.Error($"obs cleanup {root}", e); }
     }
 }

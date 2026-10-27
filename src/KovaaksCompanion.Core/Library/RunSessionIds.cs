@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 using System.Text;
 using System.Text.Json;
 
@@ -39,7 +40,7 @@ public static class RunSessionIds
     static Dictionary<string, Guid>? LoadFile(string path)
     {
         try { return ArchiveDb.At(path).LoadSessions(); }
-        catch (IOException e) { Diagnostics.ErrorReporter.Report("session ids load " + path, e); return null; }
+        catch (IOException e) { AppLog.Error("session ids load " + path, e); return null; }
     }
 
     static bool Save(string path, IEnumerable<KeyValuePair<string, Guid>> entries, bool replace)
@@ -49,7 +50,7 @@ public static class RunSessionIds
             AccessGuard.Run(Path.GetDirectoryName(path)!, true, () => ArchiveDb.At(path).SaveSessions(entries, replace));
             return true;
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Diagnostics.ErrorReporter.Report("session ids save " + path, e); return false; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { AppLog.Error("session ids save " + path, e); return false; }
     }
 
     /// <summary>

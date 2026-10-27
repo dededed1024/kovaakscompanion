@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 ﻿using System.Windows.Threading;
 using System.IO;
 using System.Windows.Media.Imaging;
@@ -55,7 +56,7 @@ public partial class StatsView
         if (_liveCard != null && !_popupOpen && HomeScroll.IsVisible && _liveCard.IsDescendantOf(HomeScroll) && HomeScroll.ActualHeight > 0)
         {
             try { want = _liveCard.TransformToAncestor(HomeScroll).Transform(new Point(0, 0)).Y >= HomeScroll.ActualHeight; }
-            catch (InvalidOperationException e) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("home view", e, KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Low); }
+            catch (InvalidOperationException e) { AppLog.Error("home view", e); }
         }
         if (want == _livePillOn) return;
         _livePillOn = want;
@@ -1557,82 +1558,8 @@ public partial class StatsView
         var recent = plays.Where(r => r.End >= DateTime.Now.AddDays(-30)).ToList();
         (string, IReadOnlyList<RunRecord>)? focus = recent.Count > 0 && recent.Count < plays.Count ? (L.T("Last 30 days"), recent) : null;
         var page = new StackPanel();
-        if (AccountTierCard() is { } tier) page.Children.Add(tier);
         page.Children.Add(RunSetPanel(plays, pbs, focus, focus == null ? null : (L.T("All time"), plays), byKind: true, timeOfDay: true));
         return new Border { Margin = new Thickness(8, 0, 8, 8), Child = page };
-    }
-
-    /// <summary>The account tier as a card on top of the Stats tab: the tier name large in its color, the estimated share beside it (none for Rookie and Super GM). Null while no benchmark progress is loaded.</summary>
-    UIElement? AccountTierCard()
-    {
-        var rating = AccountRating.Compute(AllDifficulties().Where(x => _progress.ContainsKey(x.D.KovaaksBenchmarkId)).Select(x => (x.B.BenchmarkName, _progress[x.D.KovaaksBenchmarkId])));
-        if (rating == null) return null;
-        var accent = Theme.Ink((Color)ColorConverter.ConvertFromString(rating.Color));
-        Color Alpha(byte a) => Color.FromArgb(a, accent.R, accent.G, accent.B);
-        var accentBrush = new SolidColorBrush(accent);
-
-        // a tinted base, the hatch and a strong glow from the left edge, so the card stands out from the plain ones
-        var root = new Grid { ClipToBounds = true, Background = new LinearGradientBrush(Alpha(60), Alpha(14), 0) };
-        root.Children.Add(new Border
-        {
-            Background = new RadialGradientBrush { Center = new Point(0, 0.5), GradientOrigin = new Point(0, 0.5), RadiusX = 0.7, RadiusY = 1.5, GradientStops = [new(Alpha(90), 0), new(Alpha(0), 1)] },
-        });
-        AddTierMarks(root, accent, 0, 0.14);
-
-        var content = new Grid { Margin = new Thickness(26, 16, 22, 16) };
-        content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-        var left = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        var label = new StackPanel { Orientation = Orientation.Horizontal };
-        for (var i = 0; i < 3; i++)
-            label.Children.Add(new Border { Width = 4, Height = 11, Margin = new Thickness(0, 0, 3, 0), Background = accentBrush, Opacity = 1 - i * 0.3 });
-        label.Children.Add(new TextBlock { Text = L.T("Account tier").ToUpperInvariant(), FontSize = 11, FontWeight = FontWeights.Bold, Foreground = DimB, Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center });
-        left.Children.Add(label);
-        left.Children.Add(new TextBlock
-        {
-            Text = rating.Tier.ToUpperInvariant(), FontSize = 48, FontWeight = FontWeights.Black, Foreground = accentBrush,
-            Margin = new Thickness(0, 2, 0, 0),
-        });
-        content.Children.Add(left);
-
-        var right = new StackPanel { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
-        if (rating.TopLabel.Length > 0)
-            right.Children.Add(new Border
-            {
-                Background = new SolidColorBrush(Alpha(40)), BorderBrush = accentBrush, BorderThickness = new Thickness(0, 0, 0, 2),
-                Padding = new Thickness(16, 2, 16, 2), HorizontalAlignment = HorizontalAlignment.Right,
-                Child = new TextBlock { Text = rating.TopLabel.ToUpperInvariant(), FontSize = 18, FontWeight = FontWeights.Bold, Foreground = accentBrush },
-            });
-
-        // ladder: opaque cells, each in its tier color; the next two tiers darken to the right as a gradient inside the cell, the rest are colorless; the current one is outlined
-        var at = AccountRating.Order.ToList().IndexOf(rating.Tier);
-        var ladder = new UniformGrid { Rows = 1, Margin = new Thickness(0, 12, 0, 0), Width = 280, HorizontalAlignment = HorizontalAlignment.Right };
-        var dark = Theme.Ink(Color.FromRgb(0x2C, 0x2C, 0x30));
-        Color Shade(Color c, double t) => Color.FromRgb((byte)(c.R + (dark.R - c.R) * t), (byte)(c.G + (dark.G - c.G) * t), (byte)(c.B + (dark.B - c.B) * t));
-        for (var i = 0; i < AccountRating.Order.Count; i++)
-        {
-            var hidden = i > at + 2;
-            var tierColor = Theme.Ink((Color)ColorConverter.ConvertFromString(AccountRating.ColorOf(AccountRating.Order[i])));
-            var from = i < at ? 0.2 : i == at ? 0 : i == at + 1 ? 0.5 : 0.75;
-            var to = i <= at ? from : from + 0.2;
-            var cell = new Border
-            {
-                Height = 10, Margin = new Thickness(1.5, 0, 1.5, 0), CornerRadius = new CornerRadius(2),
-                ToolTip = AccountRating.Requirement(AccountRating.Order[i]) is { Length: > 0 } req ? $"{AccountRating.Order[i]} / {req}" : AccountRating.Order[i],
-                Background = hidden ? new SolidColorBrush(dark) : new LinearGradientBrush(Shade(tierColor, from), Shade(tierColor, to), 0),
-            };
-            if (i == at) { cell.BorderBrush = FgB; cell.BorderThickness = new Thickness(1.5); }
-            ladder.Children.Add(cell);
-        }
-        right.Children.Add(ladder);
-        Grid.SetColumn(right, 1);
-        content.Children.Add(right);
-        root.Children.Add(content);
-
-        var card = Card(root, new Thickness(0));
-        card.BorderBrush = new SolidColorBrush(Alpha(110));
-        return card;
     }
 
     /// <summary>The Zenless-style marks of a tier card: a faint diagonal hatch fading out to the right and a short accent bar inset on the left edge.</summary>

@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using static KovaaksCompanion.Core.Video.Ffmpeg.FfmpegNative;
@@ -116,7 +117,7 @@ internal sealed unsafe class FfmpegAudio : IDisposable
                 Thread.Sleep(3);
             }
         }
-        catch (Exception e) { Diagnostics.ErrorReporter.Report("ffmpeg audio", e, Diagnostics.ErrorSeverity.High); } // best effort: the video keeps playing
+        catch (Exception e) { AppLog.Error("ffmpeg audio", e); } // best effort: the video keeps playing
     }
 
     bool Drifted(ClockState c)

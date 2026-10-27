@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 using System.Text.Json;
 
 namespace KovaaksCompanion.Core;
@@ -245,7 +246,7 @@ public sealed class UiState
         catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException)
         {
             // Use defaults when file is missing or malformed
-            if (path is not null && File.Exists(path)) Diagnostics.ErrorReporter.Report("ui state load " + path, e);
+            if (path is not null && File.Exists(path)) AppLog.Error("ui state load " + path, e);
             foreach (var n in DefaultFavorites) s._favs.Add(n);
             s.SetProfileItems(s._favs.AsEnumerable().Reverse().Select(PlaylistKey));
         }
@@ -279,7 +280,7 @@ public sealed class UiState
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            Diagnostics.ErrorReporter.Report("favorites " + archiveFile, e);
+            AppLog.Error("favorites " + archiveFile, e);
             return false;
         }
 
@@ -305,7 +306,7 @@ public sealed class UiState
         {
             // ui.json drops the favorites only after the database holds them
             try { ArchiveDb.At(_archiveFile).SaveFavorites(FavoritesByKind()); inArchive = true; }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Diagnostics.ErrorReporter.Report("favorites save " + _archiveFile, e); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { AppLog.Error("favorites save " + _archiveFile, e); }
         }
         var dir = Path.GetDirectoryName(path)!;
         AccessGuard.Run(dir, true, () => { Directory.CreateDirectory(dir); File.WriteAllText(path, JsonSerializer.Serialize(new Dto(_favs.ToArray(), VisibleSeries.ToArray(), ShowTrail, StatsChart, RadarAxes, RadarCompare, null, _tiers.ToArray(), ProfileName, ProfileImage, ProfileAccent, inArchive ? null : _favScenarios.ToArray(), inArchive ? null : _favRuns.ToArray(), ComparePrev, ProfileAnimated, _profile.ToArray(), _dpiFixes.Count > 0 ? new Dictionary<string, int>(_dpiFixes) : null, inArchive ? null : _favSessions.ToArray(), BrowseGoals.ToArray(), BrowseTab, BrowseKinds.ToArray(), BrowseLevels.ToArray(), BrowseFavOnly, BrowsePbOnly, BrowseSorts), Options)); });

@@ -1,3 +1,4 @@
+using KovaaksCompanion.Core.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -684,6 +685,6 @@ public partial class StatsView
     {
         var old = _host.Ui.ProfileImage;
         if (old.Length == 0) return;
-        try { if (Path.GetFileName(old).StartsWith("profile-", StringComparison.Ordinal)) File.Delete(old); } catch (IOException e) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("profile image delete", e, KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Low); } catch (UnauthorizedAccessException e) { KovaaksCompanion.Core.Diagnostics.ErrorReporter.Report("profile image delete", e, KovaaksCompanion.Core.Diagnostics.ErrorSeverity.Low); }
+        try { if (Path.GetFileName(old).StartsWith("profile-", StringComparison.Ordinal)) File.Delete(old); } catch (IOException e) { AppLog.Error("profile image delete", e); } catch (UnauthorizedAccessException e) { AppLog.Error("profile image delete", e); }
     }
 }
