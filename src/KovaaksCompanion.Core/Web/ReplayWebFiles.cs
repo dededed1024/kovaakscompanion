@@ -23,7 +23,7 @@ public static class ReplayWebFiles
     public static string ScriptPath(string folder) => Path.Combine(folder, ScriptName);
 
     /// <summary>Rewrites the list of replays that have a video and the userscript (with this folder's address in it); a file nobody changed is left alone.</summary>
-    public static void Write(ReplayArchive archive, string folder, string dataRoot, IReadOnlyList<RunRecord> runs)
+    public static void Write(ReplayArchive archive, string folder, string dataRoot, IReadOnlyList<RunRecord> runs, ScoreBook book)
     {
         Directory.CreateDirectory(folder);
         WriteIfChanged(Path.Combine(folder, IndexName), Index(archive, dataRoot, runs));
@@ -31,6 +31,7 @@ public static class ReplayWebFiles
             .Replace("__WEB_DIR__", new Uri(folder).AbsoluteUri.TrimEnd('/'))
             .Replace("__MATCHES__", string.Join("\n// @match        ", Sites.Select(s => s + "/*"))));
         ReplayWebStats.Write(archive, dataRoot);
+        ReplayWebOverview.Write(archive, book, dataRoot);
     }
 
     /// <summary>
