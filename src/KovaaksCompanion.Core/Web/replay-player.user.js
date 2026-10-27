@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         KovaaK's Companion replay player
 // @namespace    kovaaks-companion
-// @version      9
+// @version      12
 // @description  Adds a video icon next to every scenario you have a recorded replay of and plays the clip in a popup over the page.
 // @match        __MATCHES__
 // @grant        GM_getResourceText
@@ -16,6 +16,12 @@
   const VIDEO_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 6h10a2 2 0 0 1 2 2v1.6l4.4-2.6A.8.8 0 0 1 21.6 7.7v8.6a.8.8 0 0 1-1.2.7L16 14.4V16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg>';
   const OPEN_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg>';
 
+  // The popup speaks the browser's language. The app writes its translations (its own language files) into replays.js; the English text is the key
+  // and a missing entry shows the English text. F fills .NET style placeholders: {0}, {0:0}, {0:0.00} and {0:P0}.
+  let words = {};
+  const T = s => words[s] ?? s;
+  const F = (s, ...a) => T(s).replace(/\{(\d+)(?::([^}]*))?\}/g, (_, i, f) => f === 'P0' ? Math.round(a[+i] * 100) + '%' : f ? a[+i].toFixed((f.split('.')[1] || '').length) : String(a[+i]));
+
   const norm = s => s.toLowerCase().replace(/\s+/g, ' ').trim();
   const byScenario = new Map(); // normalized scenario name -> replays, best score first
 
@@ -26,6 +32,8 @@
   if (match) {
     const data = JSON.parse(match[1]);
     videoDir = data.dir;
+    const lang = ((navigator.languages && navigator.languages[0]) || navigator.language || 'en').slice(0, 2).toLowerCase();
+    words = (data.i18n || {})[lang] || {};
     runsBy = data.runs || {};
     for (const r of data.items) {
       const k = norm(r.scenario);
@@ -50,7 +58,7 @@
       const replays = byScenario.get(norm(n.nodeValue));
       const b = document.createElement('span');
       b.innerHTML = VIDEO_ICON;
-      b.title = `Play replay (${replays.length})`;
+      b.title = F('Play replay ({0})', replays.length);
       b.setAttribute('role', 'button');
       b.style.cssText = 'margin-left:6px;cursor:pointer;color:inherit;display:inline-flex;vertical-align:middle;user-select:none';
       b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); open(replays); });
@@ -112,6 +120,7 @@
   // ---- run statistics: the file the app wrote for each replay (cache/<id>.cache in the picked folder), and what is drawn from it ----
 
   const COLOR = { accent: '#0a84ff', green: '#30d158', orange: '#ff9f0a', red: '#ff453a', purple: '#bf5af2', teal: '#64d2ff', yellow: '#ffd60a' };
+  const SPEED_COLOR = { mine: '#3d8bef', top: '#3fc06a', avg: '#3d8bef', bottom: '#ec5f58' }; // the speed card has many bars, so its colors are softer than the charts'
   const idKey = r => r.id.replace(/-/g, '').toLowerCase();
   const statsCache = new Map(); // replay id -> its statistics file, kept for as long as the page is open
   const cachedStats = async (folder, r) => { if (!statsCache.has(r.id)) statsCache.set(r.id, await statsOf(folder, r)); return statsCache.get(r.id); };
@@ -151,9 +160,9 @@
     const half = Math.ceil(lines.length / 2);
     const cell = ([label, v, avg, f, up]) => {
       const tone = up == null || v == null || avg == null || v === avg ? '' : (v > avg) === up ? COLOR.green : COLOR.red;
-      return `<div class="k">${label}</div><div class="v"${tone ? ` style="color:${tone}"` : ''}>${f(v)}</div><div class="a">${avg == null ? '' : f(avg)}</div>`;
+      return `<div class="k">${T(label)}</div><div class="v"${tone ? ` style="color:${tone}"` : ''}>${f(v)}</div><div class="a">${avg == null ? '' : f(avg)}</div>`;
     };
-    const table = part => `<div class="tab"><div class="k"></div><div class="h">This run</div><div class="h">Average</div>${part.map(cell).join('')}</div>`;
+    const table = part => `<div class="tab"><div class="k"></div><div class="h">${T('This run')}</div><div class="h">${T('Average')}</div>${part.map(cell).join('')}</div>`;
     el.innerHTML = table(lines.slice(0, half)) + table(lines.slice(half));
   }
 
@@ -236,7 +245,7 @@
         if (!data[s.key].some(v => v != null)) continue;
         const c = document.createElement('button');
         c.className = 'chip' + (shown.has(s.key) ? '' : ' off');
-        c.innerHTML = `<i style="background:${s.color}"></i>${s.name} <b data-k="${s.key}">${dash}</b>`;
+        c.innerHTML = `<i style="background:${s.color}"></i>${T(s.name)} <b data-k="${s.key}">${dash}</b>`;
         c.addEventListener('click', () => {
           if (shown.has(s.key)) shown.delete(s.key); else shown.add(s.key);
           try { localStorage.setItem(visibleKey, JSON.stringify([...shown])); } catch { /* not saved */ }
@@ -361,10 +370,10 @@
       const vals = group.map(r => speedValue(r[11], spec, r[RUN.cm])).filter(v => v != null);
       return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
     };
-    const lines = [{ name: 'This run', color: COLOR.accent, get: spec => speedValue(own, spec, cm0) }];
+    const lines = [{ name: 'This run', color: SPEED_COLOR.mine, get: spec => speedValue(own, spec, cm0) }];
     if (withSpeed.length > 1) {
-      lines.push({ name: 'Top 5%', color: COLOR.green, get: mean0(withSpeed.slice(0, edge)) });
-      lines.push({ name: 'Bottom 5%', color: COLOR.red, get: mean0(withSpeed.slice(-edge)) });
+      lines.push({ name: 'Top 5%', color: SPEED_COLOR.top, get: mean0(withSpeed.slice(0, edge)) });
+      lines.push({ name: 'Bottom 5%', color: SPEED_COLOR.bottom, get: mean0(withSpeed.slice(-edge)) });
     }
     speedCard(el, replay.scenario, withSpeed, lines);
   }
@@ -372,23 +381,24 @@
   function speedCard(el, scenario, withSpeed, lines) {
     const kind = aimKind(scenario, withSpeed.map(r => r[11]));
     const order = ['General', kind === 'Tracking' ? 'Tracking' : 'Flick', kind === 'Tracking' ? 'Flick' : 'Tracking'];
-    const bar = (v, vs) => { // longer bars for larger values, but the shortest bar of a row never shrinks to nothing
-      const hi = Math.max(...vs);
+    // The longest bar of a row is as long as the values differ: a row of near-equal figures gets short bars, and the gaps are stretched so they still show.
+    const bar = (v, vs) => {
+      const hi = Math.max(...vs), lo = Math.min(...vs);
       if (!(hi > 0) || v == null) return 0;
-      const x = (v / hi) ** 2.5, low = (Math.min(...vs) / hi) ** 2.5, start = .2 + .75 * low;
-      return low >= 1 ? 1 : Math.max(.01, start + (x - low) * (1 - start) / (1 - low));
+      const top = .5 + .5 * Math.min(1, (hi - lo) / hi / .4);
+      return Math.max(.04, top * (1 - Math.min(.9, 3 * (hi - v) / hi)));
     };
-    let html = `<div class="ctitle">Mouse speed<span class="legend">${lines.map(l => `<span><i style="background:${l.color}"></i>${l.name}</span>`).join('')}</span></div>`;
+    let html = `<div class="ctitle">${T('Mouse speed')}<span class="legend">${lines.map(l => `<span><i style="background:${l.color}"></i>${T(l.name)}</span>`).join('')}</span></div>`;
     for (const group of order) {
       let body = '';
       for (const spec of SPEED[group]) {
         const vals = lines.map(l => l.get(spec));
         if (vals.every(v => v == null)) continue;
         const present = vals.filter(v => v != null);
-        body += `<div class="sl">${spec[0]}</div><div class="sv">${lines.map((l, i) => vals[i] == null ? '' :
+        body += `<div class="sl">${T(spec[0])}</div><div class="sv">${lines.map((l, i) => vals[i] == null ? '' :
           `<div class="sr"><b style="color:${l.color}">${num(vals[i], spec[3])}${spec[4]}</b><div class="sbar"><i style="width:${(bar(vals[i], present) * 100).toFixed(1)}%;background:${l.color}"></i></div></div>`).join('')}</div>`;
       }
-      if (body) html += `<div class="sg">${group}</div><div class="sgrid">${body}</div>`;
+      if (body) html += `<div class="sg">${T(group)}</div><div class="sgrid">${body}</div>`;
     }
     el.innerHTML = html;
     el.hidden = false;
@@ -531,7 +541,7 @@
       const best = bestIdx > 0 ? series[bestIdx] : null;
       const finite = a => a.filter(isFinite);
       const all = [...finite(mine), ...finite(avg), ...(best ? finite(best) : [])];
-      if (secs < 2 || !all.length) { el.innerHTML = '<div class="ctitle">Compare</div><div class="none">No data</div>'; show(false); return; }
+      if (secs < 2 || !all.length) { el.innerHTML = `<div class="ctitle">${T('Compare')}</div><div class="none">${T('No data')}</div>`; show(false); return; }
       let lo = Math.min(...all), hi = Math.max(...all);
       const pad = (hi - lo) * .06 || (m.pct ? .05 : Math.max(Math.abs(hi) * .1, 1));
       lo -= pad; hi += pad;
@@ -574,9 +584,9 @@
         const text = m.pct ? `${Math.abs(d * 100).toFixed(1)} pt` : `${num(Math.abs(d), 1)}${b > 0 ? ` (${(Math.abs(d) / b * 100).toFixed(1)}%)` : ''}`;
         return `<span style="color:${d >= 0 ? COLOR.green : COLOR.red};font-weight:600">${name}${d >= 0 ? '+' : '−'}${text}</span>`;
       };
-      const head = `<div class="ctitle">Compare<span class="chips2">${CMP.map(c => `<button class="chip${c.key === metric ? '' : ' off'}" data-m="${c.key}"><i style="background:${c.color}"></i>${c.name}</button>`).join('')}</span></div>`
-        + `<div class="deltas">${delta(endOf(mine), endOf(avg), '')}${best ? `<span class="dim">Best ${delta(endOf(mine), endOf(best), '').replace(/<[^>]+>/g, '')}</span>` : ''}`
-        + `<span class="legend"><span><u></u>This run</span><span><u class="dash"></u>Average</span>${best ? '<span><u class="dot"></u>Best</span>' : ''}</span></div>`;
+      const head = `<div class="ctitle">${T('Compare')}<span class="chips2">${CMP.map(c => `<button class="chip${c.key === metric ? '' : ' off'}" data-m="${c.key}"><i style="background:${c.color}"></i>${T(c.name)}</button>`).join('')}</span></div>`
+        + `<div class="deltas">${delta(endOf(mine), endOf(avg), '')}${best ? `<span class="dim">${T('Best')} ${delta(endOf(mine), endOf(best), '').replace(/<[^>]+>/g, '')}</span>` : ''}`
+        + `<span class="legend"><span><u></u>${T('This run')}</span><span><u class="dash"></u>${T('Average')}</span>${best ? `<span><u class="dot"></u>${T('Best')}</span>` : ''}</span></div>`;
       el.innerHTML = head + `<div class="cwrap"><svg class="cchart" viewBox="0 0 ${W} ${H}" height="${H}">${svg}</svg><div class="tip" hidden></div></div>`;
       el.querySelectorAll('[data-m]').forEach(b => b.addEventListener('click', () => { metric = b.dataset.m; render(); }));
 
@@ -589,7 +599,7 @@
         hv.firstChild.setAttribute('x1', X(s)); hv.firstChild.setAttribute('x2', X(s));
         hv.lastChild.setAttribute('cx', X(s)); hv.lastChild.setAttribute('cy', Y(mine[s]));
         const d = mine[s] - avg[s];
-        tip.innerHTML = `<b>${clock(s)}</b><br>This run ${fmt(mine[s], true)} / Average ${fmt(avg[s], true)}${best && isFinite(best[s]) ? ` / Best ${fmt(best[s], true)}` : ''}<br><span style="color:${d >= 0 ? COLOR.green : COLOR.red}">${d >= 0 ? '+' : '−'}${m.pct ? Math.abs(d * 100).toFixed(1) + ' pt' : num(Math.abs(d), 1)}</span>`;
+        tip.innerHTML = `<b>${clock(s)}</b><br>${T('This run')} ${fmt(mine[s], true)} / ${T('Average')} ${fmt(avg[s], true)}${best && isFinite(best[s]) ? ` / ${T('Best')} ${fmt(best[s], true)}` : ''}<br><span style="color:${d >= 0 ? COLOR.green : COLOR.red}">${d >= 0 ? '+' : '−'}${m.pct ? Math.abs(d * 100).toFixed(1) + ' pt' : num(Math.abs(d), 1)}</span>`;
         tip.hidden = false;
         const px = X(s) / W * r.width;
         tip.style.left = (px > r.width / 2 ? px - tip.offsetWidth - 10 : px + 10) + 'px';
@@ -630,12 +640,12 @@
       if (ov.pbs > 0) t.push(['PB', String(ov.pbs), COLOR.green]);
       t.push(['Accuracy', pct(ov.accuracy)], ['TTK', ov.ttk == null ? dash : ov.ttk.toFixed(2) + 's']);
     }
-    return `<div class="tiles">${t.map(([k, v, c]) => `<div class="tile"><small>${k}</small><b${c ? ` style="color:${c}"` : ''}>${v}</b></div>`).join('')}</div>`;
+    return `<div class="tiles">${t.map(([k, v, c]) => `<div class="tile"><small>${T(k)}</small><b${c ? ` style="color:${c}"` : ''}>${v}</b></div>`).join('')}</div>`;
   }
 
-  // Advice words the app wrote, with **x** as bold.
+  // Advice: the app's format string and figures, worded here in the popup's language, with **x** as bold.
   const adviceCard = ov => !ov.advice || !ov.advice.length ? '' :
-    `<div class="card2"><div class="ctitle">Advice</div>${ov.advice.map(a => `<p class="adv">${esc(a).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</p>`).join('')}</div>`;
+    `<div class="card2"><div class="ctitle">${T('Advice')}</div>${ov.advice.map(a => `<p class="adv">${esc(F(a.f, ...a.a)).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</p>`).join('')}</div>`;
 
   const LINES = [
     { key: 'acc', name: 'Accuracy', color: COLOR.green, fmt: v => pct(v, 1) },
@@ -691,8 +701,8 @@
         extra.push(l); col++;
       }
       svg += `<g class="hv" visibility="hidden"><line y1="${T}" y2="${H - B}" stroke="currentColor" opacity=".4"/><circle r="4.5" fill="${COLOR.accent}" stroke="#fff" stroke-width="1.5"/></g>`;
-      const chips = lines.map(l => `<button class="chip${shown.has(l.key) ? '' : ' off'}" data-l="${l.key}"><i style="background:${l.color}"></i>${l.name}</button>`).join('');
-      el.innerHTML = `<div class="ctitle">Run stats<span class="chips2">${chips}</span></div><div class="cwrap"><svg class="cchart" viewBox="0 0 ${W} ${H}" height="${H}">${svg}</svg><div class="tip" hidden></div></div>`
+      const chips = lines.map(l => `<button class="chip${shown.has(l.key) ? '' : ' off'}" data-l="${l.key}"><i style="background:${l.color}"></i>${T(l.name)}</button>`).join('');
+      el.innerHTML = `<div class="ctitle">${T('Run stats')}<span class="chips2">${chips}</span></div><div class="cwrap"><svg class="cchart" viewBox="0 0 ${W} ${H}" height="${H}">${svg}</svg><div class="tip" hidden></div></div>`
         + (n > MAX ? `<input type="range" class="range" min="0" max="${n - MAX}" value="${start}">` : '');
       el.hidden = false;
       el.querySelectorAll('[data-l]').forEach(b => b.addEventListener('click', () => { if (shown.has(b.dataset.l)) shown.delete(b.dataset.l); else shown.add(b.dataset.l); draw(); }));
@@ -704,7 +714,7 @@
         const i = nearest(e), r = cv.getBoundingClientRect();
         hv.setAttribute('visibility', 'visible');
         hv.firstChild.setAttribute('x1', X(i)); hv.firstChild.setAttribute('x2', X(i)); hv.lastChild.setAttribute('cx', X(i)); hv.lastChild.setAttribute('cy', Y(R.score[i]));
-        tip.innerHTML = `<b>${day(R.t[i])}</b><br>Score ${num(R.score[i], 1)}` + extra.filter(l => R[l.key][i] != null).map(l => `<br><span style="color:${l.color}">●</span> ${l.name} ${l.fmt(R[l.key][i])}`).join('');
+        tip.innerHTML = `<b>${day(R.t[i])}</b><br>${T('Score')} ${num(R.score[i], 1)}` + extra.filter(l => R[l.key][i] != null).map(l => `<br><span style="color:${l.color}">●</span> ${T(l.name)} ${l.fmt(R[l.key][i])}`).join('');
         tip.hidden = false;
         const px = X(i) / W * r.width;
         tip.style.left = (px > r.width / 2 ? px - tip.offsetWidth - 10 : px + 10) + 'px';
@@ -734,9 +744,9 @@
     S.points.forEach(p => { svg += `<circle cx="${X(p[1])}" cy="${Y(p[2])}" r="${p[2] === topOf[p[0]] ? 5 : 3}" fill="${SENS_COLORS[p[0]]}" opacity="${p[2] === topOf[p[0]] ? 1 : .75}"><title>${num(p[1], 2)} cm/360 · ${day(p[3])}</title></circle>`; });
     const hi = Math.max(...S.groups.map(g => g.best)), lo0 = Math.min(...S.groups.map(g => g.avg));
     const floor = hi - lo0 < .01 * hi ? 0 : Math.max(0, (lo0 - .05 * hi) / .95), frac = v => Math.max(0, Math.min(1, (v - floor) / (hi - floor || 1)));
-    const rows = S.groups.map((g, i) => `<div class="sens"><div class="srow"><i style="background:${SENS_COLORS[i]}"></i><span>${num(g.cm, 2)} cm/360</span><span class="dim">${g.runs} runs</span><span class="sv2"><span class="dim">${num(g.avg, 1)}</span> / <b style="color:${SENS_COLORS[i]}">${num(g.best, 1)}</b></span></div>`
+    const rows = S.groups.map((g, i) => `<div class="sens"><div class="srow"><i style="background:${SENS_COLORS[i]}"></i><span>${num(g.cm, 2)} cm/360</span><span class="dim">${F('{0} runs', g.runs)}</span><span class="sv2"><span class="dim">${num(g.avg, 1)}</span> / <b style="color:${SENS_COLORS[i]}">${num(g.best, 1)}</b></span></div>`
       + `<div class="obar"><i style="width:${frac(g.best) * 100}%;background:${SENS_COLORS[i]}"></i>${num(g.avg, 1) === num(g.best, 1) ? '' : `<i class="avg" style="width:${frac(g.avg) * 100}%;background:${SENS_COLORS[i]}"></i>`}</div></div>`).join('');
-    el.innerHTML = `<div class="ctitle">Score by sensitivity<span class="legend"><span>Average / Best</span></span></div><svg class="cchart" viewBox="0 0 ${W} ${H}" height="${H}">${svg}</svg><div class="sensrows">${rows}</div>`;
+    el.innerHTML = `<div class="ctitle">${T('Score by sensitivity')}<span class="legend"><span>${T('Average / Best')}</span></span></div><svg class="cchart" viewBox="0 0 ${W} ${H}" height="${H}">${svg}</svg><div class="sensrows">${rows}</div>`;
     el.hidden = false;
   }
 
@@ -750,9 +760,9 @@
       return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
     };
     speedCard(el, scenario, withSpeed, [
-      { name: 'Top 5%', color: COLOR.green, get: mean0(withSpeed.slice(0, edge)) },
-      { name: 'Average', color: COLOR.accent, get: mean0(withSpeed) },
-      { name: 'Bottom 5%', color: COLOR.red, get: mean0(withSpeed.slice(-edge)) },
+      { name: 'Top 5%', color: SPEED_COLOR.top, get: mean0(withSpeed.slice(0, edge)) },
+      { name: 'Average', color: SPEED_COLOR.avg, get: mean0(withSpeed) },
+      { name: 'Bottom 5%', color: SPEED_COLOR.bottom, get: mean0(withSpeed.slice(-edge)) },
     ]);
   }
 
@@ -786,14 +796,22 @@
   const luminance = ([r, g, b]) => [r, g, b].map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }).reduce((s, v, i) => s + v * [.2126, .7152, .0722][i], 0);
   const contrast = (a, b) => { const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x); return (hi + .05) / (lo + .05); };
 
+  // The color the page really shows: the site may paint its theme on a wrapper inside <body> (or follow its own switch instead of the browser's), so ask which
+  // elements are drawn at the edge of the window, topmost first, and take the first opaque background; its text color is the one the page text inherits there.
   function siteTheme() {
-    let bg = null;
-    for (let e = document.body; e && !bg; e = e.parentElement) {
+    let bg = null, source = document.body;
+    const stack = [];
+    for (const [x, y] of [[2, innerHeight / 2], [innerWidth - 2, innerHeight / 2], [innerWidth / 2, innerHeight - 2]]) stack.push(...document.elementsFromPoint(x, y));
+    for (const e of [...stack, document.body, document.documentElement]) {
       const p = pixel(getComputedStyle(e).backgroundColor);
-      if (p[3] === 255) bg = p; // a transparent layer shows what is behind it, so look further out
+      if (p[3] === 255) { bg = p; source = e; break; } // a transparent layer shows what is behind it, so look further down
     }
-    if (!bg) bg = matchMedia('(prefers-color-scheme: dark)').matches ? [22, 24, 29] : [255, 255, 255];
-    let fg = pixel(getComputedStyle(document.body).color);
+    if (!bg) {
+      const scheme = getComputedStyle(document.documentElement).colorScheme;
+      const dark = scheme === 'dark' || scheme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches; // "light dark" and "normal" follow the browser
+      bg = dark ? [22, 24, 29] : [255, 255, 255];
+    }
+    let fg = pixel(getComputedStyle(source).color);
     if (fg[3] !== 255 || contrast(fg, bg) < 3) fg = luminance(bg) > .4 ? [17, 17, 17] : [240, 240, 240];
     const rgb = c => `rgb(${c[0]},${c[1]},${c[2]})`;
     return { bg: rgb(bg), fg: rgb(fg), font: getComputedStyle(document.body).fontFamily || 'system-ui,sans-serif' };
@@ -830,7 +848,7 @@
         .chart{display:block;width:100%;height:150px;cursor:ew-resize;touch-action:none;user-select:none}
         .chart .g{stroke:color-mix(in srgb,var(--fg) 12%,var(--bg));stroke-width:1}
         .chart text{font-size:10px}
-        .chiprow{display:flex;gap:8px;align-items:flex-start}
+        .chiprow{display:flex;gap:8px;align-items:center;justify-content:space-between}
         .chiprow .chips{flex:1}
         .trailbtn{border:1px solid color-mix(in srgb,var(--fg) 16%,var(--bg));color:var(--fg);font-size:12px;padding:2px 10px}
         .trailbtn.off{opacity:.45}
@@ -859,6 +877,11 @@
         .sr b{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;font-size:12px}
         .sbar{height:8px;border-radius:4px;background:color-mix(in srgb,var(--fg) 8%,var(--bg))}
         .sbar i{display:block;height:100%;border-radius:4px}
+        .statbtn{padding:2px 6px;font-weight:600;color:var(--fg)}
+        .statbtn::before{content:'\\25B8';display:inline-block;width:14px;transition:transform .15s}
+        .statbtn.open::before{transform:rotate(90deg)}
+        .stats[hidden]{display:none}
+        .pb{margin-left:6px;font-size:10px;font-weight:700;letter-spacing:.03em;color:#74a98a;border:1px solid currentColor;border-radius:4px;padding:0 4px;line-height:14px}
         .stage[hidden]{display:none}
         .overview[hidden]{display:none}
         .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:8px}
@@ -877,8 +900,12 @@
         .obar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
         .obar i.avg{background:#fff!important;opacity:.45}
         .row.first{border-bottom:1px solid color-mix(in srgb,var(--fg) 12%,var(--bg));margin-bottom:2px}
-        .tables{display:grid;grid-template-columns:1fr 1fr;gap:4px 28px;padding-top:12px}
-        .tab{display:grid;grid-template-columns:1fr auto auto;column-gap:14px;row-gap:3px;align-content:start}
+        .tables{display:grid;grid-template-columns:1fr 1fr;padding-top:12px;--line:color-mix(in srgb,var(--fg) 12%,var(--bg))}
+        .tab{display:grid;grid-template-columns:1fr auto auto;align-content:start}
+        .tab:first-child{padding-right:14px}
+        .tab:last-child{padding-left:14px;border-left:1px solid var(--line)}
+        .tab>div{padding:3px 0 3px 14px;border-bottom:1px solid var(--line)}
+        .tab>.k{padding-left:0}
         .tab .k{color:var(--dim)}
         .tab .h{color:var(--dim);font-size:11px;text-align:right}
         .tab .v{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
@@ -898,11 +925,11 @@
         .n{text-align:right;font-variant-numeric:tabular-nums}
       </style>
       <div class="scrim"><div class="card">
-        <div class="bar"><b></b><span></span><button class="app" title="Continue in the app"></button><button class="x">✕</button></div>
+        <div class="bar"><b></b><span></span><button class="app" title="${T('Continue in the app')}"></button><button class="x">✕</button></div>
         <div class="body">
           <div class="main">
             <div class="stage"><video controls></video><canvas class="trail"></canvas><div class="note" hidden></div></div>
-            <div class="panel" hidden><div class="chiprow"><div class="chips"></div><button class="trailbtn" title="Show or hide the trail (T)" hidden>Trail</button></div><svg class="chart"></svg><div class="tables"></div><div class="card2 cmp" hidden></div><div class="card2 spd" hidden></div></div>
+            <div class="panel" hidden><div class="chiprow"><button class="statbtn">${T('Statistics')}</button><button class="trailbtn" title="${T('Show or hide the trail (T)')}" hidden>${T('Trail')}</button></div><div class="stats" hidden><div class="chips"></div><svg class="chart"></svg><div class="tables"></div><div class="card2 cmp" hidden></div><div class="card2 spd" hidden></div></div></div>
             <div class="overview" hidden></div>
           </div>
           <div class="list"></div>
@@ -910,13 +937,20 @@
       </div></div>`;
     const $ = s => root.querySelector(s);
     $('b').textContent = replays[0].scenario;
-    $('.bar span').textContent = `${replays.length} ${replays.length === 1 ? 'replay' : 'replays'}`;
+    $('.bar span').textContent = F(replays.length === 1 ? '{0} replay' : '{0} replays', replays.length);
     $('.app').innerHTML = OPEN_ICON;
     const list = $('.list'), video = $('video'), stage = $('.stage'), note = $('.note'), panel = $('.panel');
     const chart = makeChart($('.chips'), $('.chart'), video);
     const trail = makeTrail($('.trail'), video);
     const compare = makeCompare($('.cmp'));
     const ovEl = $('.overview');
+    // The statistics under the chart start folded; the choice stays while the user goes from one replay to the next.
+    const statBtn = $('.statbtn'), stats = $('.stats');
+    statBtn.addEventListener('click', () => {
+      stats.hidden = !stats.hidden;
+      statBtn.classList.toggle('open', !stats.hidden);
+      if (!stats.hidden) { chart.draw(); compare.redraw(); } // they could not be measured while hidden
+    });
     let mode = 'run', drawHistory = () => {};
     const trailBtn = $('.trailbtn');
     const syncTrailBtn = () => trailBtn.classList.toggle('off', !trail.on);
@@ -967,7 +1001,7 @@
     // Asks for the folder; a click on the button is what lets the browser show its folder dialog.
     function askFolder(text, error) {
       showNote(`${text}\n${videoDir}`, error, {
-        label: 'Select folder',
+        label: T('Select folder'),
         run: async () => {
           try { await pickFolder(); } catch { return; } // the dialog was closed
           play(current);
@@ -1016,12 +1050,12 @@
       video.pause(); video.removeAttribute('src'); video.load();
       mode = 'overview'; stage.hidden = true; panel.hidden = true; ovEl.hidden = false; note.hidden = true;
       [...list.children].forEach((row, k) => row.classList.toggle('on', k === 0));
-      ovEl.innerHTML = '<div class="none">Loading...</div>';
+      ovEl.innerHTML = `<div class="none">${T('Loading...')}</div>`;
       const mine = seq;
       try {
         const folder = await savedFolder();
         if (mine !== seq) return;
-        if (!folder) { ovEl.innerHTML = '<div class="none">Play a replay once to choose the folder.</div>'; return; }
+        if (!folder) { ovEl.innerHTML = `<div class="none">${T('Play a replay once to choose the folder.')}</div>`; return; }
         const scenario = replays[0].scenario;
         if (!ovCache.has(scenario)) ovCache.set(scenario, JSON.parse(await (await clipIn(folder, 'cache/' + await overviewName(scenario))).text()));
         if (mine !== seq) return;
@@ -1033,7 +1067,7 @@
         });
         renderSens(ovEl.querySelector('.sens2'), ov);
         renderSpeedAll(ovEl.querySelector('.spd2'), scenario, rows);
-      } catch { if (mine === seq) ovEl.innerHTML = '<div class="none">No overview yet. Start the app once so it can write it.</div>'; }
+      } catch { if (mine === seq) ovEl.innerHTML = `<div class="none">${T('No overview yet. Start the app once so it can write it.')}</div>`; }
     }
 
     async function play(i) {
@@ -1045,12 +1079,12 @@
       mode = 'run'; ovEl.hidden = true; stage.hidden = false;
       [...list.children].forEach((row, k) => row.classList.toggle('on', k === i + 1));
       video.removeAttribute('src'); video.load();
-      if (typeof W.showDirectoryPicker !== 'function') { showNote('This browser cannot open a folder of videos. Use Chrome or Edge.', true); return; }
-      showNote('Loading the video...');
+      if (typeof W.showDirectoryPicker !== 'function') { showNote(T('This browser cannot open a folder of videos. Use Chrome or Edge.'), true); return; }
+      showNote(T('Loading the video...'));
       try {
         const folder = await savedFolder();
         if (mine !== seq) return;
-        if (!folder) { askFolder('Select the folder that has your replay videos:'); return; }
+        if (!folder) { askFolder(T('Select the folder that has your replay videos:')); return; }
         const file = await clipIn(folder, replays[i].video);
         if (mine !== seq) return;
         blobUrl = URL.createObjectURL(file);
@@ -1060,14 +1094,14 @@
         loadPanel(folder, i, mine);
       } catch (e) {
         if (mine !== seq) return;
-        if (e && e.name === 'NotFoundError') askFolder('The video was not found. Select the folder that has your replay videos:', true);
-        else showNote('The video could not be read: ' + (e && e.message || e), true);
+        if (e && e.name === 'NotFoundError') askFolder(T('The video was not found. Select the folder that has your replay videos:'), true);
+        else showNote(T('The video could not be read: ') + (e && e.message || e), true);
       }
     }
 
     const first = document.createElement('div');
     first.className = 'row first';
-    first.innerHTML = '<span>Overview</span><span class="n"></span>';
+    first.innerHTML = `<span>${T('Overview')}</span><span class="n"></span>`;
     first.addEventListener('click', showOverview);
     list.append(first);
 
@@ -1077,6 +1111,7 @@
       const d = document.createElement('span'), n = document.createElement('span');
       d.className = 'd'; n.className = 'n';
       d.textContent = new Date(r.end).toLocaleDateString();
+      if (r.pb) { const b = document.createElement('span'); b.className = 'pb'; b.textContent = T('PB'); b.title = T('Personal best'); d.append(b); }
       n.textContent = r.score.toLocaleString(undefined, { maximumFractionDigits: 1 });
       row.append(d, n);
       row.addEventListener('click', () => play(i));

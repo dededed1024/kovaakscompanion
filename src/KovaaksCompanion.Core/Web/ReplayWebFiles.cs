@@ -26,7 +26,7 @@ public static class ReplayWebFiles
     public static void Write(ReplayArchive archive, string folder, string dataRoot, IReadOnlyList<RunRecord> runs, ScoreBook book)
     {
         Directory.CreateDirectory(folder);
-        WriteIfChanged(Path.Combine(folder, IndexName), Index(archive, dataRoot, runs));
+        WriteIfChanged(Path.Combine(folder, IndexName), Index(archive, dataRoot, runs, book));
         WriteIfChanged(ScriptPath(folder), Resource(ScriptName)
             .Replace("__WEB_DIR__", new Uri(folder).AbsoluteUri.TrimEnd('/'))
             .Replace("__MATCHES__", string.Join("\n// @match        ", Sites.Select(s => s + "/*"))));
@@ -38,14 +38,19 @@ public static class ReplayWebFiles
     /// The list as <c>window.KC_REPLAYS = {...}</c>; the userscript reads the file's text as a resource and takes the object out of it.
     /// <c>dir</c> is the data folder the user picks in the browser (the videos and <see cref="ReplayWebStats"/> files are inside it), and each <c>video</c> is a path inside it with forward slashes.
     /// </summary>
-    static string Index(ReplayArchive archive, string dataRoot, IReadOnlyList<RunRecord> runs)
+    static string Index(ReplayArchive archive, string dataRoot, IReadOnlyList<RunRecord> runs, ScoreBook book)
     {
+        var pbRuns = book.PersonalBestRuns;
         var items = archive.List()
             .Select(i => (Info: i, Path: archive.VideoPath(i)))
             .Where(x => x.Path is not null)
-            .Select(x => new { id = x.Info.Id, scenario = x.Info.Scenario, score = x.Info.Score, end = x.Info.End.ToString("s"), video = System.IO.Path.GetRelativePath(dataRoot, x.Path!).Replace('\\', '/') });
+            .Select(x => new { id = x.Info.Id, scenario = x.Info.Scenario, score = x.Info.Score, pb = IsPersonalBest(pbRuns, x.Info), end = x.Info.End.ToString("s"), video = System.IO.Path.GetRelativePath(dataRoot, x.Path!).Replace('\\', '/') });
         return "window.KC_REPLAYS=" + JsonSerializer.Serialize(new { dir = dataRoot, items, runs = Runs(runs) }) + ";\n";
     }
+
+    /// <summary>True when the run this replay belongs to (same scenario, ended within a minute) beat every earlier score, cloud scores included.</summary>
+    static bool IsPersonalBest(IReadOnlySet<RunRecord> pbRuns, ReplayInfo info) =>
+        pbRuns.Any(r => r.Scenario.Equals(info.Scenario, StringComparison.OrdinalIgnoreCase) && Math.Abs((r.End - info.End).TotalSeconds) < 60);
 
     /// <summary>
     /// Every local run per scenario (lower-case name), oldest first, one row per run: end (Unix seconds), score, accuracy, kills, average TTK, overshots, reloads, distance, cm/360, seconds played, shots, mouse speed (see <see cref="SpeedRow"/>).
