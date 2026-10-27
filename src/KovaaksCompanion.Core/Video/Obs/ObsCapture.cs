@@ -63,6 +63,7 @@ internal sealed class ObsCapture : IDisposable
         ObsNative.obs_data_set_int(s, "priority", 2);    // match by exe
         ObsNative.obs_data_set_bool(s, "cursor", true);
         ObsNative.obs_data_set_bool(s, "client_area", true);
+        ObsNative.obs_data_set_bool(s, "force_sdr", true); // the canvas is SDR; an HDR window would otherwise record black
         _videoSource = ObsNative.obs_source_create("window_capture", "game", s, 0);
         ObsNative.obs_data_release(s);
         if (_videoSource == 0) { Error = "window_capture source failed"; return false; }
