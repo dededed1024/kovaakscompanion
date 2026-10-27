@@ -177,8 +177,19 @@ public sealed class ScoreChart : FrameworkElement
 
     // The watermark lives in its own retained visual so the drift is a transform animation run by the compositor, not a redraw per frame.
     // Visual order: watermark (clipped to the card) below, line and tags above. OnRender then only paints the hit-test rect.
+    // The drift runs on a wrapper element so its bitmap cache sits inside the moving transform: the glyphs are rasterized once and the GPU only slides the texture.
+    sealed class MarkLayer : FrameworkElement
+    {
+        readonly Visual _child;
+        public MarkLayer(Visual child) { _child = child; AddVisualChild(child); }
+        protected override int VisualChildrenCount => 1;
+        protected override Visual GetVisualChild(int index) => _child;
+        public void Shift(Transform t) => VisualTransform = t;
+    }
+
     readonly ContainerVisual _markClip = new();
     readonly DrawingVisual _mark = new();
+    readonly MarkLayer _markLayer;
     readonly DrawingVisual _lineVis = new();
     readonly TranslateTransform _markShift = new();
     bool _visualsAttached;
@@ -203,6 +214,8 @@ public sealed class ScoreChart : FrameworkElement
         var anim = new System.Windows.Media.Animation.DoubleAnimation(0, pitch, TimeSpan.FromSeconds(7)) { RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever };
         // Locked to 60 fps. The animation is clock-based (position = elapsed time / period), so a dropped frame skips ahead instead of slowing the drift, and the compositor interpolates the sub-pixel position of every frame.
         System.Windows.Media.Animation.Timeline.SetDesiredFrameRate(anim, 60);
+        // Only while moving: a static watermark needs no texture.
+        _markLayer.CacheMode = new BitmapCache(2);
         _markShift.BeginAnimation(TranslateTransform.YProperty, anim);
     }
 
@@ -211,6 +224,22 @@ public sealed class ScoreChart : FrameworkElement
         if (_animPitch < 0) return;
         _animPitch = -1;
         _markShift.BeginAnimation(TranslateTransform.YProperty, null);
+        _markLayer.CacheMode = null;
+    }
+
+    bool _minimized;
+
+    /// <summary>The drift runs only while the chart can be seen: shown, and its window not minimized.</summary>
+    void SyncDrift()
+    {
+        if (_manualDrift || _pitch <= 0) return;
+        if (_marquee && IsLoaded && IsVisible && !_minimized) StartDrift(_pitch); else StopDrift();
+    }
+
+    void OnWindowState(object? sender, EventArgs e)
+    {
+        _minimized = sender is Window { WindowState: WindowState.Minimized };
+        SyncDrift();
     }
 
     static readonly Typeface MarkFace = new(new FontFamily("Segoe UI Black, Arial Black, Segoe UI"), FontStyles.Normal, FontWeights.Black, FontStretches.Normal);
@@ -220,10 +249,20 @@ public sealed class ScoreChart : FrameworkElement
         // Display mode + ClearType snap glyphs to whole pixels, which makes the drifting watermark step. Ideal + grayscale lets it move smoothly.
         TextOptions.SetTextFormattingMode(this, TextFormattingMode.Ideal);
         TextOptions.SetTextRenderingMode(this, TextRenderingMode.Grayscale);
-        _mark.Transform = _markShift;
-        _markClip.Children.Add(_mark);
-        Loaded += (_, _) => InvalidateVisual();
-        Unloaded += (_, _) => StopDrift();
+        _markLayer = new MarkLayer(_mark);
+        _markLayer.Shift(_markShift);
+        _markClip.Children.Add(_markLayer);
+        Loaded += (_, _) =>
+        {
+            if (Window.GetWindow(this) is { } win) { win.StateChanged += OnWindowState; _minimized = win.WindowState == WindowState.Minimized; }
+            InvalidateVisual();
+        };
+        Unloaded += (_, _) =>
+        {
+            if (Window.GetWindow(this) is { } win) win.StateChanged -= OnWindowState;
+            StopDrift();
+        };
+        IsVisibleChanged += (_, _) => SyncDrift();
     }
 
     Brush? _miniBrush;
@@ -268,8 +307,7 @@ public sealed class ScoreChart : FrameworkElement
                 dc.DrawText(ft, new Point(x, y - ft.Baseline));
         _pitch = pitch;
         if (_manualDrift) { StopDrift(); _markShift.Y = _phase * pitch; }
-        else if (_marquee && IsLoaded) StartDrift(pitch);
-        else StopDrift();
+        else SyncDrift();
     }
 
     bool _manualDrift;
