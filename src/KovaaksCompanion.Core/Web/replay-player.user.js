@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         KovaaK's Companion replay player
 // @namespace    kovaaks-companion
-// @version      8
+// @version      9
 // @description  Adds a video icon next to every scenario you have a recorded replay of and plays the clip in a popup over the page.
 // @match        __MATCHES__
 // @grant        GM_getResourceText
@@ -366,7 +366,11 @@
       lines.push({ name: 'Top 5%', color: COLOR.green, get: mean0(withSpeed.slice(0, edge)) });
       lines.push({ name: 'Bottom 5%', color: COLOR.red, get: mean0(withSpeed.slice(-edge)) });
     }
-    const kind = aimKind(replay.scenario, withSpeed.map(r => r[11]));
+    speedCard(el, replay.scenario, withSpeed, lines);
+  }
+
+  function speedCard(el, scenario, withSpeed, lines) {
+    const kind = aimKind(scenario, withSpeed.map(r => r[11]));
     const order = ['General', kind === 'Tracking' ? 'Tracking' : 'Flick', kind === 'Tracking' ? 'Flick' : 'Tracking'];
     const bar = (v, vs) => { // longer bars for larger values, but the shortest bar of a row never shrinks to nothing
       const hi = Math.max(...vs);
@@ -602,6 +606,156 @@
     };
   }
 
+  // ---- overview of the scenario: totals, advice, score history, score by sensitivity and mouse speed over all runs ----
+
+  const niceStep = raw => { const p = 10 ** Math.floor(Math.log10(raw)); return [1, 2, 2.5, 5, 10].map(m => m * p).find(x => raw <= x) || 10 * p; };
+  const niceTicks = (lo, hi, n = 4) => {
+    if (!(hi > lo)) return [lo];
+    const step = niceStep((hi - lo) / n), out = [];
+    for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-9; v += step) out.push(+v.toFixed(10));
+    return out;
+  };
+  const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const day = t => new Date(t * 1000).toLocaleDateString([], { dateStyle: 'medium' });
+
+  // The file name of the scenario's overview: the first 16 hex digits of the SHA-1 of its lower-case name (the app uses the same rule).
+  async function overviewName(scenario) {
+    const d = new Uint8Array(await crypto.subtle.digest('SHA-1', new TextEncoder().encode(scenario.toLowerCase())));
+    return 'scenario-' + [...d].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16) + '.cache';
+  }
+
+  function tiles(ov) {
+    const t = [['Time', ov.time > 0 ? span(ov.time) : dash], ['Runs', String(ov.plays)], ['Best', ov.best ? num(ov.best, 1) : dash]];
+    if (ov.accuracy != null || ov.ttk != null) {
+      if (ov.pbs > 0) t.push(['PB', String(ov.pbs), COLOR.green]);
+      t.push(['Accuracy', pct(ov.accuracy)], ['TTK', ov.ttk == null ? dash : ov.ttk.toFixed(2) + 's']);
+    }
+    return `<div class="tiles">${t.map(([k, v, c]) => `<div class="tile"><small>${k}</small><b${c ? ` style="color:${c}"` : ''}>${v}</b></div>`).join('')}</div>`;
+  }
+
+  // Advice words the app wrote, with **x** as bold.
+  const adviceCard = ov => !ov.advice || !ov.advice.length ? '' :
+    `<div class="card2"><div class="ctitle">Advice</div>${ov.advice.map(a => `<p class="adv">${esc(a).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</p>`).join('')}</div>`;
+
+  const LINES = [
+    { key: 'acc', name: 'Accuracy', color: COLOR.green, fmt: v => pct(v, 1) },
+    { key: 'kills', name: 'Kills', color: COLOR.orange, fmt: v => num(v, 0) },
+    { key: 'ttk', name: 'TTK', color: COLOR.purple, fmt: v => v.toFixed(2) + 's' },
+    { key: 'over', name: 'Overshots', color: COLOR.red, fmt: v => num(v, 0) },
+    { key: 'reloads', name: 'Reloads', color: '#66d4cf', fmt: v => num(v, 0) },
+    { key: 'dist', name: 'Distance moved', color: COLOR.accent, fmt: v => num(v, 2) },
+    { key: 'speed', name: 'Average speed', color: COLOR.yellow, fmt: v => v.toFixed(1) + ' cm/s' },
+    { key: 'reaction', name: 'Reaction time', color: COLOR.teal, fmt: v => num(v, 0) + ' ms' },
+  ];
+
+  // The score of every run in order, a dashed moving average, and any of the other figures on their own scales; hover for the details, click a point to open that run.
+  function renderHistory(el, ov, open) {
+    const R = ov.records, n = R.score.length;
+    if (!n) { el.hidden = true; return; }
+    const MAX = 70;
+    let start = Math.max(0, n - MAX);
+    const shown = new Set();
+    const lines = LINES.filter(l => R[l.key].some(v => v != null && (l.key === 'reloads' || l.key === 'dist' ? v > .01 : true)));
+
+    function draw() {
+      const W = el.clientWidth || 600, H = 210, L = 44, T = 8, B = 20, rightCols = lines.filter(l => shown.has(l.key)).length;
+      const Rm = 8 + rightCols * 38, end = Math.min(n, start + MAX), m = end - start;
+      const X = i => L + (m <= 1 ? 0 : (i - start) / (m - 1)) * (W - L - Rm), idx = Array.from({ length: m }, (_, k) => start + k);
+      const sc = R.score.slice(start, end);
+      let lo = Math.min(...sc), hi = Math.max(...sc);
+      const pad = (hi - lo) * .08 || 1; lo = Math.max(0, lo - pad); hi += pad;
+      const Y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+      let svg = '';
+      for (const v of niceTicks(lo, hi)) svg += `<line x1="${L}" x2="${W - Rm}" y1="${Y(v)}" y2="${Y(v)}" class="g"/><text x="${L - 4}" y="${Y(v) + 3}" text-anchor="end" fill="currentColor" opacity=".6">${num(v, 0)}</text>`;
+      const avg = idx.map(i => { const a = R.score.slice(Math.max(0, i - 4), i + 1); return a.reduce((x, y) => x + y, 0) / a.length; });
+      const area = curve(idx.map(i => [X(i), Y(R.score[i])]));
+      svg += `<path d="${area}L${X(end - 1)},${H - B}L${X(start)},${H - B}Z" fill="${COLOR.accent}" opacity=".14"/>`;
+      svg += `<path d="${curve(idx.map((i, k) => [X(i), Y(avg[k])]))}" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 4" opacity=".45"/>`;
+      svg += `<path d="${area}" fill="none" stroke="${COLOR.accent}" stroke-width="2" stroke-linejoin="round"/><circle cx="${X(end - 1)}" cy="${Y(R.score[end - 1])}" r="3.5" fill="${COLOR.accent}"/>`;
+      let col = 0;
+      const extra = [];
+      for (const l of lines.filter(l => shown.has(l.key))) {
+        const pts = idx.filter(i => R[l.key][i] != null), vals = pts.map(i => R[l.key][i]);
+        if (!vals.length) continue;
+        let a = Math.min(...vals), b = Math.max(...vals);
+        if (l.key === 'acc') { a = Math.max(0, Math.floor((a - .02) * 20) / 20); b = Math.min(1, Math.ceil((b + .02) * 20) / 20); } else { const p = (b - a) * .08 || 1; a = a >= 0 ? Math.max(0, a - p) : a - p; b += p; }
+        const Yl = v => T + (H - T - B) * (1 - (v - a) / (b - a || 1));
+        let d = '', pen = false, last = null;
+        for (const i of idx) {
+          const v = R[l.key][i];
+          if (v == null) { pen = false; continue; }
+          d += `${pen ? 'L' : (last != null ? 'M' : 'M')}${X(i)},${Yl(v)}`; pen = true; last = i;
+        }
+        svg += `<path d="${d}" fill="none" stroke="${l.color}" stroke-width="1.5" stroke-linejoin="round"/>`;
+        for (const t of niceTicks(a, b, 3)) svg += `<text x="${W - 4 - col * 38}" y="${Yl(t) + 3}" text-anchor="end" fill="${l.color}">${l.key === 'acc' ? Math.round(t * 100) + '%' : compact(t)}</text>`;
+        extra.push(l); col++;
+      }
+      svg += `<g class="hv" visibility="hidden"><line y1="${T}" y2="${H - B}" stroke="currentColor" opacity=".4"/><circle r="4.5" fill="${COLOR.accent}" stroke="#fff" stroke-width="1.5"/></g>`;
+      const chips = lines.map(l => `<button class="chip${shown.has(l.key) ? '' : ' off'}" data-l="${l.key}"><i style="background:${l.color}"></i>${l.name}</button>`).join('');
+      el.innerHTML = `<div class="ctitle">Run stats<span class="chips2">${chips}</span></div><div class="cwrap"><svg class="cchart" viewBox="0 0 ${W} ${H}" height="${H}">${svg}</svg><div class="tip" hidden></div></div>`
+        + (n > MAX ? `<input type="range" class="range" min="0" max="${n - MAX}" value="${start}">` : '');
+      el.hidden = false;
+      el.querySelectorAll('[data-l]').forEach(b => b.addEventListener('click', () => { if (shown.has(b.dataset.l)) shown.delete(b.dataset.l); else shown.add(b.dataset.l); draw(); }));
+      const rg = el.querySelector('.range');
+      if (rg) rg.addEventListener('input', () => { start = +rg.value; draw(); });
+      const cv = el.querySelector('.cchart'), tip = el.querySelector('.tip'), hv = cv.querySelector('.hv');
+      const nearest = e => { const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W; return Math.min(end - 1, Math.max(start, start + Math.round((x - L) / ((W - L - Rm) / Math.max(1, m - 1))))); };
+      cv.addEventListener('pointermove', e => {
+        const i = nearest(e), r = cv.getBoundingClientRect();
+        hv.setAttribute('visibility', 'visible');
+        hv.firstChild.setAttribute('x1', X(i)); hv.firstChild.setAttribute('x2', X(i)); hv.lastChild.setAttribute('cx', X(i)); hv.lastChild.setAttribute('cy', Y(R.score[i]));
+        tip.innerHTML = `<b>${day(R.t[i])}</b><br>Score ${num(R.score[i], 1)}` + extra.filter(l => R[l.key][i] != null).map(l => `<br><span style="color:${l.color}">●</span> ${l.name} ${l.fmt(R[l.key][i])}`).join('');
+        tip.hidden = false;
+        const px = X(i) / W * r.width;
+        tip.style.left = (px > r.width / 2 ? px - tip.offsetWidth - 10 : px + 10) + 'px';
+      });
+      cv.addEventListener('pointerleave', () => { hv.setAttribute('visibility', 'hidden'); tip.hidden = true; });
+      cv.addEventListener('click', e => open(R.t[nearest(e)]));
+    }
+    draw();
+    return draw;
+  }
+
+  const SENS_COLORS = ['#4C9BFF', '#FF9F43', '#3DD68C', '#E05CC9', '#F5D04A'];
+
+  // Score against sensitivity: a dot per run, and per sensitivity its runs, average and best with overlapping bars.
+  function renderSens(el, ov) {
+    const S = ov.sens;
+    if (!S || !S.groups.length) { el.hidden = true; return; }
+    const W = el.clientWidth || 600, H = 170, L = 44, B = 20, T = 8, Rm = 10;
+    const cms = S.points.map(p => p[1]), scores = S.points.map(p => p[2]);
+    let x0 = Math.min(...cms), x1 = Math.max(...cms), y0 = Math.min(...scores), y1 = Math.max(...scores);
+    const px = (x1 - x0) * .08 || 1, py = (y1 - y0) * .1 || 1; x0 -= px; x1 += px; y0 = Math.max(0, y0 - py); y1 += py;
+    const X = v => L + (v - x0) / (x1 - x0) * (W - L - Rm), Y = v => T + (H - T - B) * (1 - (v - y0) / (y1 - y0));
+    let svg = '';
+    for (const v of niceTicks(y0, y1)) svg += `<line x1="${L}" x2="${W - Rm}" y1="${Y(v)}" y2="${Y(v)}" class="g"/><text x="${L - 4}" y="${Y(v) + 3}" text-anchor="end" fill="currentColor" opacity=".6">${num(v, 0)}</text>`;
+    for (const v of niceTicks(x0, x1, 5)) svg += `<text x="${X(v)}" y="${H - 5}" text-anchor="middle" fill="currentColor" opacity=".6">${num(v, 1)}</text>`;
+    const topOf = S.groups.map((_, g) => Math.max(...S.points.filter(p => p[0] === g).map(p => p[2])));
+    S.points.forEach(p => { svg += `<circle cx="${X(p[1])}" cy="${Y(p[2])}" r="${p[2] === topOf[p[0]] ? 5 : 3}" fill="${SENS_COLORS[p[0]]}" opacity="${p[2] === topOf[p[0]] ? 1 : .75}"><title>${num(p[1], 2)} cm/360 · ${day(p[3])}</title></circle>`; });
+    const hi = Math.max(...S.groups.map(g => g.best)), lo0 = Math.min(...S.groups.map(g => g.avg));
+    const floor = hi - lo0 < .01 * hi ? 0 : Math.max(0, (lo0 - .05 * hi) / .95), frac = v => Math.max(0, Math.min(1, (v - floor) / (hi - floor || 1)));
+    const rows = S.groups.map((g, i) => `<div class="sens"><div class="srow"><i style="background:${SENS_COLORS[i]}"></i><span>${num(g.cm, 2)} cm/360</span><span class="dim">${g.runs} runs</span><span class="sv2"><span class="dim">${num(g.avg, 1)}</span> / <b style="color:${SENS_COLORS[i]}">${num(g.best, 1)}</b></span></div>`
+      + `<div class="obar"><i style="width:${frac(g.best) * 100}%;background:${SENS_COLORS[i]}"></i>${num(g.avg, 1) === num(g.best, 1) ? '' : `<i class="avg" style="width:${frac(g.avg) * 100}%;background:${SENS_COLORS[i]}"></i>`}</div></div>`).join('');
+    el.innerHTML = `<div class="ctitle">Score by sensitivity<span class="legend"><span>Average / Best</span></span></div><svg class="cchart" viewBox="0 0 ${W} ${H}" height="${H}">${svg}</svg><div class="sensrows">${rows}</div>`;
+    el.hidden = false;
+  }
+
+  // The mouse-speed card of the overview: the top 5% of runs by score, all runs and the bottom 5%.
+  function renderSpeedAll(el, scenario, rows) {
+    const withSpeed = rows.filter(r => r[11]).sort((a, b) => b[RUN.score] - a[RUN.score]);
+    if (!withSpeed.length) { el.hidden = true; return; }
+    const edge = Math.max(1, Math.ceil(withSpeed.length * .05));
+    const mean0 = group => spec => {
+      const vals = group.map(r => speedValue(r[11], spec, r[RUN.cm])).filter(v => v != null);
+      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    };
+    speedCard(el, scenario, withSpeed, [
+      { name: 'Top 5%', color: COLOR.green, get: mean0(withSpeed.slice(0, edge)) },
+      { name: 'Average', color: COLOR.accent, get: mean0(withSpeed) },
+      { name: 'Bottom 5%', color: COLOR.red, get: mean0(withSpeed.slice(-edge)) },
+    ]);
+  }
+
   // ---- popup over the page; a shadow root keeps the site's styles out ------------------------------------------
 
   let host = null;
@@ -705,6 +859,24 @@
         .sr b{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;font-size:12px}
         .sbar{height:8px;border-radius:4px;background:color-mix(in srgb,var(--fg) 8%,var(--bg))}
         .sbar i{display:block;height:100%;border-radius:4px}
+        .stage[hidden]{display:none}
+        .overview[hidden]{display:none}
+        .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:8px}
+        .tile{background:var(--hover);border-radius:10px;padding:10px 12px}
+        .tile small{display:block;color:var(--dim);font-size:11.5px;margin-bottom:2px}
+        .tile b{font-size:22px;font-weight:600}
+        .adv{margin:4px 0;color:var(--dim);font-size:13px;line-height:1.5}
+        .adv b{color:var(--fg)}
+        .range{width:100%;margin-top:6px}
+        .sensrows{margin-top:8px;display:grid;gap:8px}
+        .srow{display:flex;align-items:center;gap:10px}
+        .srow i{width:8px;height:8px;border-radius:50%}
+        .srow .sv2{margin-left:auto;font-variant-numeric:tabular-nums}
+        .dim{color:var(--dim)}
+        .obar{position:relative;height:8px;border-radius:4px;background:color-mix(in srgb,var(--fg) 8%,var(--bg));margin-top:4px;overflow:hidden}
+        .obar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+        .obar i.avg{background:#fff!important;opacity:.45}
+        .row.first{border-bottom:1px solid color-mix(in srgb,var(--fg) 12%,var(--bg));margin-bottom:2px}
         .tables{display:grid;grid-template-columns:1fr 1fr;gap:4px 28px;padding-top:12px}
         .tab{display:grid;grid-template-columns:1fr auto auto;column-gap:14px;row-gap:3px;align-content:start}
         .tab .k{color:var(--dim)}
@@ -731,6 +903,7 @@
           <div class="main">
             <div class="stage"><video controls></video><canvas class="trail"></canvas><div class="note" hidden></div></div>
             <div class="panel" hidden><div class="chiprow"><div class="chips"></div><button class="trailbtn" title="Show or hide the trail (T)" hidden>Trail</button></div><svg class="chart"></svg><div class="tables"></div><div class="card2 cmp" hidden></div><div class="card2 spd" hidden></div></div>
+            <div class="overview" hidden></div>
           </div>
           <div class="list"></div>
         </div>
@@ -743,6 +916,8 @@
     const chart = makeChart($('.chips'), $('.chart'), video);
     const trail = makeTrail($('.trail'), video);
     const compare = makeCompare($('.cmp'));
+    const ovEl = $('.overview');
+    let mode = 'run', drawHistory = () => {};
     const trailBtn = $('.trailbtn');
     const syncTrailBtn = () => trailBtn.classList.toggle('off', !trail.on);
     trailBtn.addEventListener('click', () => { trail.toggle(); syncTrailBtn(); });
@@ -766,7 +941,7 @@
     const follow = () => { chart.update(); trail.draw(); frame = requestAnimationFrame(follow); }; // the playhead moves smoothly while the video plays
     video.addEventListener('play', () => { cancelAnimationFrame(frame); follow(); });
     video.addEventListener('pause', () => cancelAnimationFrame(frame));
-    onResize = () => { fit(); chart.draw(); compare.redraw(); };
+    onResize = () => { fit(); chart.draw(); compare.redraw(); drawHistory(); };
     addEventListener('resize', onResize);
 
     // The clip is a file in the folder the user picked; the popup plays it straight from there, so it starts without reading the whole file first.
@@ -834,13 +1009,41 @@
       compare.set(entries);
     }
 
+    const ovCache = new Map(); // scenario -> its overview file
+    // The overview replaces the video and the run panel: the totals, advice, score history, sensitivity and speed of every run of the scenario.
+    async function showOverview() {
+      release();
+      video.pause(); video.removeAttribute('src'); video.load();
+      mode = 'overview'; stage.hidden = true; panel.hidden = true; ovEl.hidden = false; note.hidden = true;
+      [...list.children].forEach((row, k) => row.classList.toggle('on', k === 0));
+      ovEl.innerHTML = '<div class="none">Loading...</div>';
+      const mine = seq;
+      try {
+        const folder = await savedFolder();
+        if (mine !== seq) return;
+        if (!folder) { ovEl.innerHTML = '<div class="none">Play a replay once to choose the folder.</div>'; return; }
+        const scenario = replays[0].scenario;
+        if (!ovCache.has(scenario)) ovCache.set(scenario, JSON.parse(await (await clipIn(folder, 'cache/' + await overviewName(scenario))).text()));
+        if (mine !== seq) return;
+        const ov = ovCache.get(scenario), rows = runsBy[scenario.toLowerCase()] || [];
+        ovEl.innerHTML = tiles(ov) + adviceCard(ov) + '<div class="card2 hist"></div><div class="card2 sens2"></div><div class="card2 spd2"></div>';
+        drawHistory = renderHistory(ovEl.querySelector('.hist'), ov, time => { // a click on a score opens that run when its video exists
+          const j = replays.findIndex(r => Math.abs(new Date(r.end).getTime() / 1000 - time) < 60);
+          if (j >= 0) play(j);
+        });
+        renderSens(ovEl.querySelector('.sens2'), ov);
+        renderSpeedAll(ovEl.querySelector('.spd2'), scenario, rows);
+      } catch { if (mine === seq) ovEl.innerHTML = '<div class="none">No overview yet. Start the app once so it can write it.</div>'; }
+    }
+
     async function play(i) {
       release();
       panel.hidden = true; chart.clear(); trail.clear(); compare.clear();
       $('.spd').hidden = true;
       const mine = seq;
       current = i;
-      [...list.children].forEach((row, k) => row.classList.toggle('on', k === i));
+      mode = 'run'; ovEl.hidden = true; stage.hidden = false;
+      [...list.children].forEach((row, k) => row.classList.toggle('on', k === i + 1));
       video.removeAttribute('src'); video.load();
       if (typeof W.showDirectoryPicker !== 'function') { showNote('This browser cannot open a folder of videos. Use Chrome or Edge.', true); return; }
       showNote('Loading the video...');
@@ -861,6 +1064,12 @@
         else showNote('The video could not be read: ' + (e && e.message || e), true);
       }
     }
+
+    const first = document.createElement('div');
+    first.className = 'row first';
+    first.innerHTML = '<span>Overview</span><span class="n"></span>';
+    first.addEventListener('click', showOverview);
+    list.append(first);
 
     replays.forEach((r, i) => {
       const row = document.createElement('div');
