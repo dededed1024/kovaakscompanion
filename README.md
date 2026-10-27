@@ -68,7 +68,7 @@ Every recorded run plays back with your mouse path drawn over the video. The han
 Best score, runs, accuracy and the score history with the tier lines, mouse speed against your top and bottom 5% of runs, and every run of the scenario on the right.
 
 <p align="center">
-  <img src="assets/screenshots/app-overview.png" width="680" alt="Overview of VT Controlsphere Advanced S5">
+  <img src="assets/screenshots/app-overview-169.png" width="680" alt="Overview of VT Controlsphere Advanced S5">
 </p>
 
 ### Session
@@ -76,7 +76,7 @@ Best score, runs, accuracy and the score history with the tier lines, mouse spee
 Everything you played in one sitting, with advice, accuracy over the session and your tier level in tracking, flick and switching.
 
 <p align="center">
-  <img src="assets/screenshots/app-session.png" width="680" alt="Session card">
+  <img src="assets/screenshots/app-session-169.png" width="680" alt="Session card">
 </p>
 
 ### Browser icons
