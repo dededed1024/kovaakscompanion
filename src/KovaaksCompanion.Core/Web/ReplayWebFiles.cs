@@ -19,23 +19,16 @@ public static class ReplayWebFiles
 
     public static string FolderOf(AppSettings settings) => Path.Combine(settings.CacheFolder, "web");
 
-    /// <summary>Rewrites the list of replays that have a video (a list nobody changed is left alone).</summary>
+    public static string ScriptPath(string folder) => Path.Combine(folder, ScriptName);
+
+    /// <summary>Rewrites the list of replays that have a video and the userscript (with this folder's address in it); a file nobody changed is left alone.</summary>
     public static void Write(ReplayArchive archive, string folder)
     {
         Directory.CreateDirectory(folder);
         WriteIfChanged(Path.Combine(folder, IndexName), Index(archive));
-    }
-
-    /// <summary>Writes the userscript (with this folder's address in it) and returns its path.</summary>
-    public static string WriteScript(string folder)
-    {
-        Directory.CreateDirectory(folder);
-        var path = Path.Combine(folder, ScriptName);
-        var text = Resource(ScriptName)
+        WriteIfChanged(ScriptPath(folder), Resource(ScriptName)
             .Replace("__WEB_DIR__", new Uri(folder).AbsoluteUri.TrimEnd('/'))
-            .Replace("__MATCHES__", string.Join("\n// @match        ", Sites.Select(s => s + "/*")));
-        WriteIfChanged(path, text);
-        return path;
+            .Replace("__MATCHES__", string.Join("\n// @match        ", Sites.Select(s => s + "/*"))));
     }
 
     /// <summary>

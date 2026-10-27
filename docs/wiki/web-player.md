@@ -7,7 +7,7 @@ A userscript adds a video icon next to scenarios that have a recorded replay on 
 - `Core/Web/ReplayWebFiles.cs`: writes two files into `cache/web/` (both rebuilt from the archive, so they are cache):
   - `replays.js`: `window.KC_REPLAYS = [...]`, the replays that have a video (id, scenario, score, end time, video file address).
   - `replay-player.user.js`: the userscript. The folder address and the `@match` lines (one site list, `ReplayWebFiles.Sites`) are filled in when it is written.
-- The app rewrites the list when it starts and whenever a replay is saved or a video is deleted.
+- The app rewrites both files when it starts and whenever a replay is saved or a video is deleted.
 - Settings has a four-step guide: Tampermonkey store links (Chrome, Edge), the extension switches (with an image), the "Install userscript" button (writes the script and opens it in the default browser through `DefaultBrowser`, where the userscript manager offers to install it), and the folder pick (with an image). The images are drawn illustrations in `Assets/guide-*.png`, not screenshots; redo them if the popup look changes.
 - The script reads the list with `@resource` (read from disk again each time a page loads), finds scenario names in the page text and adds the icon. The popup is a shadow-root overlay with the video on the left and a date/score list on the right; the card is as tall as the video.
 - `replays.js` is `window.KC_REPLAYS={dir, items}`: `dir` is the videos folder, each item's `video` is a forward-slash path inside it.

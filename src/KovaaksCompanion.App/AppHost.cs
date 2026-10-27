@@ -607,12 +607,9 @@ public sealed class AppHost : IDisposable
     /// <summary>Opens the userscript in the default browser, where the userscript manager offers to install it; false when no browser could be started.</summary>
     public bool InstallUserScript()
     {
-        try
-        {
-            WriteWebFiles();
-            return DefaultBrowser.OpenFile(ReplayWebFiles.WriteScript(ReplayWebFiles.FolderOf(_settings)));
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { AppLog.Write("web", "writing the userscript failed: " + e.Message); return false; }
+        WriteWebFiles();
+        var script = ReplayWebFiles.ScriptPath(ReplayWebFiles.FolderOf(_settings));
+        return File.Exists(script) && DefaultBrowser.OpenFile(script);
     }
 
     /// <summary>Shows the replay a <c>kovaaks-companion://open</c> link names, at the video time it carries.</summary>
