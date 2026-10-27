@@ -306,11 +306,21 @@
                             <Border Style="{StaticResource SectionCard}">
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="4,0,0,0" Text="{app:Loc 'A userscript puts a video icon next to your recorded scenarios on evxl.app and app.voltaic.gg. The icon opens a popup that plays the clip, with or without this app running.'}"/>
-                                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="4,12,0,0" Text="{app:Loc '1. Install Tampermonkey in your browser, then press Install userscript.'}"/>
-                                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="4,6,0,0" Text="{app:Loc '2. On the browser extensions page, open the details of Tampermonkey and turn on Allow user scripts and Allow access to file URLs.'}"/>
-                                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="4,6,0,0" Text="{app:Loc '3. In Tampermonkey Settings, set Config mode to Advanced, set Security > Allow scripts to access local files to All local files, and press Save.'}"/>
-                                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="4,12,0,0" Text="{app:Loc 'Step 3 lets every installed userscript read local files. A clip is read before it plays, so a long clip takes a few seconds to start.'}"/>
-                                    <Button x:Name="UserScriptBtn" Content="{app:Loc 'Install userscript'}" HorizontalAlignment="Left" Margin="0,16,0,0" Click="OnInstallUserScript"/>
+                                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="4,12,0,0" Text="{app:Loc '1. Install the Tampermonkey extension in your browser.'}"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                        <Button Content="Chrome" Tag="https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo" Click="OnIconLink"/>
+                                        <Button Content="Edge" Margin="8,0,0,0" Tag="https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd" Click="OnIconLink"/>
+                                    </StackPanel>
+                                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="4,16,0,0" Text="{app:Loc '2. On the browser extensions page, open the details of Tampermonkey and turn on Allow user scripts and Allow access to file URLs.'}"/>
+                                    <Border CornerRadius="8" ClipToBounds="True" MaxWidth="460" HorizontalAlignment="Left" Margin="0,2,0,0">
+                                        <Image Source="pack://application:,,,/Assets/guide-extension.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                    </Border>
+                                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="4,16,0,0" Text="{app:Loc '3. Press Install userscript, then confirm the install in the tab that opens.'}"/>
+                                    <Button x:Name="UserScriptBtn" Content="{app:Loc 'Install userscript'}" HorizontalAlignment="Left" Margin="0,2,0,0" Click="OnInstallUserScript"/>
+                                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="4,16,0,0" Text="{app:Loc '4. On the site, press a video icon and select the folder the popup shows (once per site; Chrome or Edge).'}"/>
+                                    <Border CornerRadius="8" ClipToBounds="True" MaxWidth="460" HorizontalAlignment="Left" Margin="0,2,0,0">
+                                        <Image Source="pack://application:,,,/Assets/guide-folder.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                    </Border>
                                 </StackPanel>
                             </Border>
 

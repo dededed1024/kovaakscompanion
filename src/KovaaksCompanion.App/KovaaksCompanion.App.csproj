@@ -20,6 +20,7 @@
   <ItemGroup>
     <Resource Include="Fonts\*.otf" />
     <Resource Include="Assets\app.ico" />
+    <Resource Include="Assets\guide-*.png" />
   </ItemGroup>
 
   <ItemGroup>
