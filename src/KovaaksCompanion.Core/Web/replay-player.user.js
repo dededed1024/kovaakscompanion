@@ -1,7 +1,9 @@
 // ==UserScript==
 // @name         KovaaK's Companion replay player
 // @namespace    kovaaks-companion
-// @version      12
+// @version      __VERSION__
+// @updateURL    __WEB_DIR__/replay-player.user.js
+// @downloadURL  __WEB_DIR__/replay-player.user.js
 // @description  Adds a video icon next to every scenario you have a recorded replay of and plays the clip in a popup over the page.
 // @match        __MATCHES__
 // @grant        GM_getResourceText

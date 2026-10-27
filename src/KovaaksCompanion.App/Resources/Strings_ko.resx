@@ -317,4 +317,17 @@
   <data name="Per run average" xml:space="preserve"><value>런당 평균</value></data>
   <data name="Run length" xml:space="preserve"><value>런 길이</value></data>
   <data name="Time of day" xml:space="preserve"><value>시간대</value></data>
+  <data name="Average / Best" xml:space="preserve"><value>평균 / 최고</value></data>
+  <data name="Continue in the app" xml:space="preserve"><value>앱에서 이어서 보기</value></data>
+  <data name="Loading the video..." xml:space="preserve"><value>영상을 불러오는 중...</value></data>
+  <data name="Loading..." xml:space="preserve"><value>불러오는 중...</value></data>
+  <data name="No overview yet. Start the app once so it can write it." xml:space="preserve"><value>아직 개요가 없습니다. 앱을 한 번 실행하면 만들어집니다.</value></data>
+  <data name="Play a replay once to choose the folder." xml:space="preserve"><value>리플레이를 한 번 재생해 폴더를 선택하세요.</value></data>
+  <data name="Play replay ({0})" xml:space="preserve"><value>리플레이 재생 ({0})</value></data>
+  <data name="Select folder" xml:space="preserve"><value>폴더 선택</value></data>
+  <data name="Select the folder that has your replay videos:" xml:space="preserve"><value>리플레이 영상이 있는 폴더를 선택하세요:</value></data>
+  <data name="Statistics" xml:space="preserve"><value>통계</value></data>
+  <data name="The video could not be read: " xml:space="preserve"><value>영상을 읽을 수 없습니다: </value></data>
+  <data name="The video was not found. Select the folder that has your replay videos:" xml:space="preserve"><value>영상을 찾을 수 없습니다. 리플레이 영상이 있는 폴더를 선택하세요:</value></data>
+  <data name="This browser cannot open a folder of videos. Use Chrome or Edge." xml:space="preserve"><value>이 브라우저는 영상 폴더를 열 수 없습니다. Chrome이나 Edge를 사용하세요.</value></data>
 </root>

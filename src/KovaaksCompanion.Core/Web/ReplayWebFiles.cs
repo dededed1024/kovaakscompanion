@@ -22,30 +22,39 @@ public static class ReplayWebFiles
 
     public static string ScriptPath(string folder) => Path.Combine(folder, ScriptName);
 
-    /// <summary>Rewrites the list of replays that have a video and the userscript (with this folder's address in it); a file nobody changed is left alone.</summary>
-    public static void Write(ReplayArchive archive, string folder, string dataRoot, IReadOnlyList<RunRecord> runs, ScoreBook book)
+    /// <summary>
+    /// Rewrites the list of replays that have a video and the userscript (with this folder's address in it); a file nobody changed is left alone.
+    /// <paramref name="translations"/> are the app's texts per language code (English text to translation); the popup picks the browser's language from them.
+    /// <paramref name="appVersion"/> becomes the script's <c>@version</c>, so the userscript manager sees a newer script after every app update.
+    /// </summary>
+    public static void Write(ReplayArchive archive, string folder, string dataRoot, IReadOnlyList<RunRecord> runs, ScoreBook book, IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> translations, Version appVersion)
     {
         Directory.CreateDirectory(folder);
-        WriteIfChanged(Path.Combine(folder, IndexName), Index(archive, dataRoot, runs, book));
+        WriteIfChanged(Path.Combine(folder, IndexName), Index(archive, dataRoot, runs, book, translations));
         WriteIfChanged(ScriptPath(folder), Resource(ScriptName)
+            .Replace("__VERSION__", ScriptVersion(appVersion))
             .Replace("__WEB_DIR__", new Uri(folder).AbsoluteUri.TrimEnd('/'))
             .Replace("__MATCHES__", string.Join("\n// @match        ", Sites.Select(s => s + "/*"))));
         ReplayWebStats.Write(archive, dataRoot);
         ReplayWebOverview.Write(archive, book, dataRoot);
     }
 
+    /// <summary>The app version behind a fixed prefix of 13: the scripts installed before the version followed the app are numbered 12 and below, and 13.x compares as newer than those.</summary>
+    static string ScriptVersion(Version v) => $"13.{v.Major}.{v.Minor}.{Math.Max(v.Build, 0)}";
+
     /// <summary>
     /// The list as <c>window.KC_REPLAYS = {...}</c>; the userscript reads the file's text as a resource and takes the object out of it.
+    /// <c>i18n</c> is <paramref name="translations"/>.
     /// <c>dir</c> is the data folder the user picks in the browser (the videos and <see cref="ReplayWebStats"/> files are inside it), and each <c>video</c> is a path inside it with forward slashes.
     /// </summary>
-    static string Index(ReplayArchive archive, string dataRoot, IReadOnlyList<RunRecord> runs, ScoreBook book)
+    static string Index(ReplayArchive archive, string dataRoot, IReadOnlyList<RunRecord> runs, ScoreBook book, IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> translations)
     {
         var pbRuns = book.PersonalBestRuns;
         var items = archive.List()
             .Select(i => (Info: i, Path: archive.VideoPath(i)))
             .Where(x => x.Path is not null)
             .Select(x => new { id = x.Info.Id, scenario = x.Info.Scenario, score = x.Info.Score, pb = IsPersonalBest(pbRuns, x.Info), end = x.Info.End.ToString("s"), video = System.IO.Path.GetRelativePath(dataRoot, x.Path!).Replace('\\', '/') });
-        return "window.KC_REPLAYS=" + JsonSerializer.Serialize(new { dir = dataRoot, items, runs = Runs(runs) }) + ";\n";
+        return "window.KC_REPLAYS=" + JsonSerializer.Serialize(new { dir = dataRoot, items, runs = Runs(runs), i18n = translations }) + ";\n";
     }
 
     /// <summary>True when the run this replay belongs to (same scenario, ended within a minute) beat every earlier score, cloud scores included.</summary>

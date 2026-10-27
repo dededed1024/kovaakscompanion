@@ -16,7 +16,7 @@ namespace KovaaksCompanion.Core.Web;
 /// </summary>
 public static partial class ReplayWebOverview
 {
-    public const int Version = 1;
+    public const int Version = 2;
 
     [GeneratedRegex("^scenario-[0-9a-f]{16}\\.cache$")]
     private static partial Regex OwnFile();
@@ -116,13 +116,21 @@ public static partial class ReplayWebOverview
         w.WriteEndObject();
     }
 
-    /// <summary>The advice paragraphs as the app words them, filled in; <c>**x**</c> marks the bold parts.</summary>
+    /// <summary>The advice paragraphs as format string (<c>f</c>, <c>**x**</c> marks the bold parts) and figures (<c>a</c>); the popup words them in the browser's language.</summary>
     static void Advice(Utf8JsonWriter w, ScenarioHistory s)
     {
         var speeds = s.Runs.Where(r => r.Speed != null).Select(r => (r.End, r.Score, Speed: r.Speed! with { Cm360 = r.Cm360 })).ToList();
         var advice = ScenarioAdvice.Build(s, speeds);
         w.WriteStartArray("advice");
-        foreach (var a in advice) w.WriteStringValue(string.Format(CultureInfo.GetCultureInfo("en-US"), a.Format, a.Args));
+        foreach (var a in advice)
+        {
+            w.WriteStartObject();
+            w.WriteString("f", a.Format);
+            w.WriteStartArray("a");
+            foreach (var x in a.Args) w.WriteNumberValue(Convert.ToDouble(x, CultureInfo.InvariantCulture));
+            w.WriteEndArray();
+            w.WriteEndObject();
+        }
         w.WriteEndArray();
     }
 

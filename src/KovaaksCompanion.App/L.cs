@@ -54,6 +54,13 @@ public static class L
     public static string Time(DateTime t) => t.ToString("HH:mm", CultureInfo.InvariantCulture);
     public static string Stamp(DateTime t) => ShortDate(t) + " " + Time(t);
 
+    /// <summary>Every language file's texts by language code (English text to translation), for the browser popup, which picks its language itself.</summary>
+    public static IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> Tables() => Languages.Where(l => l.Code != "en").ToDictionary(l => l.Code, l =>
+    {
+        var set = new ResourceManager("KovaaksCompanion.App.Resources.Strings_" + l.Code, typeof(L).Assembly).GetResourceSet(CultureInfo.InvariantCulture, true, false);
+        return (IReadOnlyDictionary<string, string>)(set?.Cast<System.Collections.DictionaryEntry>().ToDictionary(e => (string)e.Key, e => (string)e.Value!) ?? []);
+    });
+
     public static string T(string key)
     {
         if (_rm == null || _forceEnglish > 0) return key;
