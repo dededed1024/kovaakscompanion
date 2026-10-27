@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         KovaaK's Companion replay player
 // @namespace    kovaaks-companion
-// @version      17
+// @version      18
 // @updateURL    __WEB_DIR__/replay-player.user.js
 // @downloadURL  __WEB_DIR__/replay-player.user.js
 // @description  Adds a video icon next to every scenario you have a recorded replay of and plays the clip in a popup over the page.
@@ -30,20 +30,26 @@
   // The app keeps this list in a file; the userscript manager reads it from disk each time a page loads.
   let videoDir = ''; // the folder the clips are in, shown when the user is asked to pick it
   let runsBy = {}; // lower-case scenario name -> its local runs (see RUN)
-  const match = (GM_getResourceText('replays') || '').match(/KC_REPLAYS=(\{[\s\S]*\});/);
-  if (match) {
+  // The list comes from two places: the userscript manager's copy (no permission needed, but the manager may serve an old one for a while) and, once the
+  // user has let the page read the videos folder, the copy the app keeps there (cache/replays.cache), which is read again every 5 s and whenever the page gets focus.
+  function load(text) {
+    const match = (text || '').match(/KC_REPLAYS=(\{[\s\S]*\});/);
+    if (!match) return false;
     const data = JSON.parse(match[1]);
     videoDir = data.dir;
     const lang = ((navigator.languages && navigator.languages[0]) || navigator.language || 'en').slice(0, 2).toLowerCase();
     words = (data.i18n || {})[lang] || {};
     runsBy = data.runs || {};
+    byScenario.clear();
     for (const r of data.items) {
       const k = norm(r.scenario);
       if (!byScenario.has(k)) byScenario.set(k, []);
       byScenario.get(k).push(r);
     }
     for (const list of byScenario.values()) list.sort((a, b) => b.score - a.score);
+    return true;
   }
+  load(GM_getResourceText('replays'));
 
   // The row a scenario name is in, found without site class names: the icons (svg, img, icon fonts, Iconify masks) to the right of the name, each taken as the
   // largest element around it that holds no other icon. Returns those elements, nothing when the name has no row of icons.
@@ -79,7 +85,8 @@
       const items = rowItems(n);
       if (!items.length) continue; // the row may not be drawn yet; the next scan tries again
       n.parentElement.dataset[MARK] = '1';
-      const replays = byScenario.get(norm(n.nodeValue));
+      const key = norm(n.nodeValue);
+      const replays = byScenario.get(key);
       const title = F('Play replay ({0})', replays.length);
       const first = items.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0];
       const ref = first.matches(ICON) ? first : first.querySelector(ICON);
@@ -95,7 +102,7 @@
       b.setAttribute('role', 'button');
       b.style.cursor = 'pointer';
       b.title = title;
-      b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); open(replays); });
+      b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); open(byScenario.get(key) || replays); });
     }
   }
 
@@ -139,6 +146,7 @@
     const last = await store('readonly', s => s.get(KEY)).catch(() => null);
     const h = await W.showDirectoryPicker(last ? { id: 'kc-videos', mode: 'read', startIn: last } : { id: 'kc-videos', mode: 'read' });
     picked = h;
+    refresh();
     await store('readwrite', s => s.put(h, KEY)).catch(() => {});
     return h;
   }
@@ -149,6 +157,19 @@
     for (const p of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(p);
     return (await dir.getFileHandle(parts[parts.length - 1])).getFile();
   }
+
+  // Reads the app's copy of the list through the picked folder, only when the browser already allows it (no prompt), and draws the icons of what is new.
+  async function refresh() {
+    try {
+      const h = picked || await store('readonly', s => s.get(KEY));
+      if (!h || (await h.queryPermission({ mode: 'read' })) !== 'granted') return;
+      if (load(await (await clipIn(h, 'cache/replays.cache')).text())) scan();
+    } catch { /* no folder yet, or the app has not written the copy: keep the list the manager gave */ }
+  }
+  addEventListener('focus', refresh);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+  setInterval(refresh, 5000); // a page in the background is slowed down by the browser, which is fine
+  refresh();
 
   // ---- run statistics: the file the app wrote for each replay (cache/<id>.cache in the picked folder), and what is drawn from it ----
 
@@ -865,7 +886,7 @@
     root.innerHTML = `
       <style>
         .scrim{position:absolute;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;font:13px var(--font)}
-        .card{max-height:100%;overflow-y:auto;scrollbar-width:thin;--dim:color-mix(in srgb,var(--fg) 60%,var(--bg));--hover:color-mix(in srgb,var(--fg) 10%,var(--bg));--on:color-mix(in srgb,#0a84ff 24%,var(--bg));width:min(1600px,100%);background:var(--bg);color:var(--fg);border:1px solid color-mix(in srgb,var(--fg) 14%,var(--bg));border-radius:12px;padding:8px 10px 10px;box-shadow:0 20px 60px #0009}
+        .card{max-height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;--dim:color-mix(in srgb,var(--fg) 60%,var(--bg));--hover:color-mix(in srgb,var(--fg) 10%,var(--bg));--on:color-mix(in srgb,#0a84ff 24%,var(--bg));width:min(1600px,100%);background:var(--bg);color:var(--fg);border:1px solid color-mix(in srgb,var(--fg) 14%,var(--bg));border-radius:12px;padding:8px 10px 10px;box-shadow:0 20px 60px #0009}
         .bar{display:flex;gap:8px;align-items:center;padding-bottom:6px}
         .bar b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
         .bar span{color:var(--dim);font-size:12px}
@@ -957,7 +978,7 @@
         .note button:hover{background:#3470d0;color:#fff}
         .note[hidden]{display:none}
         .note.err{color:#ff9a9a}
-        .list{overflow-y:auto;scrollbar-width:thin}
+        .list{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
         .row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:4px 8px;cursor:pointer;white-space:nowrap}
         .row:hover{background:var(--hover)}
         .row.on{background:var(--on)}
@@ -1164,6 +1185,8 @@
       location.href = `kovaaks-companion://open?id=${replays[current].id}&s=${video.currentTime}`;
     });
     $('.scrim').addEventListener('mousedown', e => { if (e.target === e.currentTarget) close(); });
+    // Wheel or touch over the dim area, outside the card, would otherwise scroll the page behind the popup.
+    for (const type of ['wheel', 'touchmove']) $('.scrim').addEventListener(type, e => { if (e.target === e.currentTarget) e.preventDefault(); }, { passive: false });
     document.addEventListener('keydown', onKey, true);
     document.body.append(host);
     play(0);

@@ -13,6 +13,8 @@ namespace KovaaksCompanion.Core.Web;
 public static class ReplayWebFiles
 {
     public const string IndexName = "replays.js";
+    /// <summary>Copy of the index inside the data folder: the page reads it through the folder the user picked, so a new video shows up without the userscript manager's own copy of <see cref="IndexName"/> (which it may keep for a while).</summary>
+    public const string IndexCopyName = "replays" + CacheFile.Extension;
     public const string ScriptName = "replay-player.user.js";
 
     /// <summary>The websites the userscript runs on; they become its <c>@match</c> lines.</summary>
@@ -29,7 +31,10 @@ public static class ReplayWebFiles
     public static void Write(ReplayArchive archive, string folder, string dataRoot, IReadOnlyList<RunRecord> runs, ScoreBook book, IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> translations)
     {
         Directory.CreateDirectory(folder);
-        WriteIfChanged(Path.Combine(folder, IndexName), Index(archive, dataRoot, runs, book, translations));
+        var index = Index(archive, dataRoot, runs, book, translations);
+        WriteIfChanged(Path.Combine(folder, IndexName), index);
+        Directory.CreateDirectory(Path.Combine(dataRoot, ReplayWebStats.FolderName));
+        WriteIfChanged(Path.Combine(dataRoot, ReplayWebStats.FolderName, IndexCopyName), index);
         WriteIfChanged(ScriptPath(folder), Resource(ScriptName)
             .Replace("__WEB_DIR__", new Uri(folder).AbsoluteUri.TrimEnd('/'))
             .Replace("__MATCHES__", string.Join("\n// @match        ", Sites.Select(s => s + "/*"))));
