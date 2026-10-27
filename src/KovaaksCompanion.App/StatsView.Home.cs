@@ -1398,7 +1398,7 @@ public partial class StatsView
         return false;
     }
 
-    Border Tag(string label, bool on, Action click)
+    Border FilterTag(string label, bool on, Action click)
     {
         var text = new TextBlock { Text = L.T(label), Foreground = on ? (Brush)FindResource("Accent") : DimB, FontSize = 12.5, FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal };
         var chip = new Border
@@ -1428,22 +1428,22 @@ public partial class StatsView
         if (tab == "Stats") return host;
 
         if (tab == "Playlists")
-            Row(LevelTags.Select(t => { var l = t.Level; return Tag(t.Label, _levels.Contains(l), () => { Toggle(_levels, l); SaveBrowseState(); FillBrowse(); }); }));
+            Row(LevelTags.Select(t => { var l = t.Level; return FilterTag(t.Label, _levels.Contains(l), () => { Toggle(_levels, l); SaveBrowseState(); FillBrowse(); }); }));
         if (tab is "Playlists" or "Scenarios" or "Runs")
-            Row(KindTags.Select(t => { var k = t.Kind; return Tag(t.Label, _kinds.Contains(k), () => { Toggle(_kinds, k); SaveBrowseState(); FillBrowse(); }); }));
+            Row(KindTags.Select(t => { var k = t.Kind; return FilterTag(t.Label, _kinds.Contains(k), () => { Toggle(_kinds, k); SaveBrowseState(); FillBrowse(); }); }));
         if (tab is "Playlists" or "Scenarios")
             Row(GoalTags.Select(t =>
             {
                 var k = t.Key;
-                return Tag(t.Label, _goals.Contains(k), () =>
+                return FilterTag(t.Label, _goals.Contains(k), () =>
                 {
                     Toggle(_goals, k);
                     SaveBrowseState();
                     FillBrowse();
                 });
             }));
-        var flags = new List<Border> { Tag("Favorites", _favOnly, () => { _favOnly = !_favOnly; SaveBrowseState(); FillBrowse(); }) };
-        if (tab is "Sessions" or "Runs") flags.Add(Tag("PB", _pbOnly, () => { _pbOnly = !_pbOnly; SaveBrowseState(); FillBrowse(); }));
+        var flags = new List<Border> { FilterTag("Favorites", _favOnly, () => { _favOnly = !_favOnly; SaveBrowseState(); FillBrowse(); }) };
+        if (tab is "Sessions" or "Runs") flags.Add(FilterTag("PB", _pbOnly, () => { _pbOnly = !_pbOnly; SaveBrowseState(); FillBrowse(); }));
         Row(flags);
         return host;
     }

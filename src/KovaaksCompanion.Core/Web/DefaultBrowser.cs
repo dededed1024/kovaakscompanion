@@ -21,6 +21,7 @@ public static class DefaultBrowser
     /// <summary>The program of the https handler (the default browser); null when it cannot be read.</summary>
     static string? Exe()
     {
+        if (!OperatingSystem.IsWindows()) return null;
         using var choice = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice");
         if (choice?.GetValue("ProgId") is not string progId) return null;
         using var open = Registry.ClassesRoot.OpenSubKey(progId + @"\shell\open\command");
