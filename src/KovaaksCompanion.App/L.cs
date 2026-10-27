@@ -7,7 +7,7 @@ namespace KovaaksCompanion.App;
 /// <summary>UI text lookup. The English source text is the key; a language file (Resources/Strings_xx.resx) maps it to that language and a missing entry shows the English text.</summary>
 public static class L
 {
-    public static readonly (string Code, string Name)[] Languages = [("en", "English"), ("ko", "한국어")];
+    public static readonly (string Code, string Name)[] Languages = [("en", "English"), ("ko", "한국어"), ("zh", "中文"), ("ru", "Русский")];
 
     static ResourceManager? _rm;
     static string _code = "en";

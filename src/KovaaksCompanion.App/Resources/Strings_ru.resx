@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Search" xml:space="preserve"><value>Поиск</value></data>
+  <data name="Settings" xml:space="preserve"><value>Настройки</value></data>
+  <data name="Minimize" xml:space="preserve"><value>Свернуть</value></data>
+  <data name="Maximize" xml:space="preserve"><value>Развернуть</value></data>
+  <data name="Restore" xml:space="preserve"><value>Восстановить</value></data>
+  <data name="Close" xml:space="preserve"><value>Закрыть</value></data>
+  <data name="Play" xml:space="preserve"><value>Воспроизвести</value></data>
+  <data name="Mute" xml:space="preserve"><value>Выключить звук</value></data>
+  <data name="Unmute" xml:space="preserve"><value>Включить звук</value></data>
+  <data name="Show in Explorer" xml:space="preserve"><value>Показать в проводнике</value></data>
+  <data name="No sessions" xml:space="preserve"><value>Нет сессий</value></data>
+  <data name="Favorite session" xml:space="preserve"><value>Добавить сессию в избранное</value></data>
+  <data name="Unfavorite session" xml:space="preserve"><value>Убрать сессию из избранного</value></data>
+  <data name="Progress" xml:space="preserve"><value>Прогресс</value></data>
+  <data name="Name" xml:space="preserve"><value>Название</value></data>
+  <data name="Plays" xml:space="preserve"><value>Число игр</value></data>
+  <data name="Newest" xml:space="preserve"><value>Новые</value></data>
+  <data name="Oldest" xml:space="preserve"><value>Старые</value></data>
+  <data name="Longest" xml:space="preserve"><value>Время игры</value></data>
+  <data name="Favorite playlist" xml:space="preserve"><value>Добавить плейлист в избранное</value></data>
+  <data name="Unfavorite playlist" xml:space="preserve"><value>Убрать плейлист из избранного</value></data>
+  <data name="Favorite scenario" xml:space="preserve"><value>Добавить сценарий в избранное</value></data>
+  <data name="Favorite replay" xml:space="preserve"><value>Добавить реплей в избранное</value></data>
+  <data name="Up to 6 favorites" xml:space="preserve"><value>В избранном не больше 6</value></data>
+  <data name="Overlay the previous local run" xml:space="preserve"><value>Наложить предыдущий локальный ран</value></data>
+  <data name="Overview" xml:space="preserve"><value>Обзор</value></data>
+  <data name="Prev run" xml:space="preserve"><value>Пред. ран</value></data>
+  <data name="Trail" xml:space="preserve"><value>След</value></data>
+  <data name="Show or hide the trail (T)" xml:space="preserve"><value>Показать или скрыть след (T)</value></data>
+  <data name="Step back 1/60 s (←)" xml:space="preserve"><value>Назад на 1/60 с (←)</value></data>
+  <data name="Play / pause (Space)" xml:space="preserve"><value>Воспроизведение / пауза (Space)</value></data>
+  <data name="Step forward 1/60 s (→)" xml:space="preserve"><value>Вперёд на 1/60 с (→)</value></data>
+  <data name="Playback speed" xml:space="preserve"><value>Скорость воспроизведения</value></data>
+  <data name="Fullscreen (F)" xml:space="preserve"><value>Во весь экран (F)</value></data>
+  <data name="Exit fullscreen (F)" xml:space="preserve"><value>Выйти из полноэкранного режима (F)</value></data>
+  <data name="No local runs yet" xml:space="preserve"><value>Локальных ранов пока нет</value></data>
+  <data name="General" xml:space="preserve"><value>Основные</value></data>
+  <data name="KovaaK's folder" xml:space="preserve"><value>Папка KovaaK's</value></data>
+  <data name="Browse…" xml:space="preserve"><value>Обзор…</value></data>
+  <data name="Output folder" xml:space="preserve"><value>Папка сохранения</value></data>
+  <data name="Steam ID" xml:space="preserve"><value>Steam ID</value></data>
+  <data name="Install userscript" xml:space="preserve"><value>Установить userscript</value></data>
+  <data name="Browser replay player" xml:space="preserve"><value>Просмотр реплеев в браузере</value></data>
+  <data name="A userscript puts a video icon next to your recorded scenarios on evxl.app and app.voltaic.gg. The icon opens a popup that plays the clip, with or without this app running." xml:space="preserve"><value>Userscript добавляет значок видео рядом с записанными сценариями на evxl.app и app.voltaic.gg. Значок открывает окно с воспроизведением ролика, даже если приложение не запущено.</value></data>
+  <data name="1. Install the Tampermonkey extension in your browser." xml:space="preserve"><value>1. Установите в браузере расширение Tampermonkey.</value></data>
+  <data name="2. On the browser extensions page, open the details of Tampermonkey and turn on Allow user scripts and Allow access to file URLs." xml:space="preserve"><value>2. На странице расширений браузера откройте сведения о Tampermonkey и включите «Разрешить пользовательские скрипты» и «Разрешить доступ к URL-адресам файлов».</value></data>
+  <data name="3. Press Install userscript, then confirm the install in the tab that opens." xml:space="preserve"><value>3. Нажмите «Установить userscript» и подтвердите установку в открывшейся вкладке.</value></data>
+  <data name="4. On the site, press a video icon and select the folder the popup shows (once per site; Chrome or Edge)." xml:space="preserve"><value>4. На сайте нажмите значок видео и выберите папку, указанную в окне (один раз для каждого сайта; Chrome или Edge).</value></data>
+  <data name="Could not open the browser" xml:space="preserve"><value>Не удалось открыть браузер</value></data>
+  <data name="Exit when the window is closed" xml:space="preserve"><value>Выходить при закрытии окна</value></data>
+  <data name="Show in system tray" xml:space="preserve"><value>Показывать в системном трее</value></data>
+  <data name="Update automatically" xml:space="preserve"><value>Обновлять автоматически</value></data>
+  <data name="What's new" xml:space="preserve"><value>Что нового</value></data>
+  <data name="Start with Windows" xml:space="preserve"><value>Запускать вместе с Windows</value></data>
+  <data name="Start with KovaaK's" xml:space="preserve"><value>Запускать вместе с KovaaK's</value></data>
+  <data name="Exit with KovaaK's" xml:space="preserve"><value>Закрываться вместе с KovaaK's</value></data>
+  <data name="Steam must be closed to change the launch option. Close Steam now? It restarts afterwards." xml:space="preserve"><value>Чтобы изменить параметр запуска, нужно закрыть Steam. Закрыть Steam сейчас? После этого он запустится снова.</value></data>
+  <data name="Could not change the Steam launch option" xml:space="preserve"><value>Не удалось изменить параметр запуска Steam</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Отмена</value></data>
+  <data name="Recording" xml:space="preserve"><value>Запись</value></data>
+  <data name="Recording quality" xml:space="preserve"><value>Качество записи</value></data>
+  <data name="Low" xml:space="preserve"><value>Низкое</value></data>
+  <data name="Medium" xml:space="preserve"><value>Среднее</value></data>
+  <data name="High" xml:space="preserve"><value>Высокое</value></data>
+  <data name="Ultra" xml:space="preserve"><value>Максимальное</value></data>
+  <data name="Recording FPS" xml:space="preserve"><value>Частота кадров записи</value></data>
+  <data name="Max video folder size (0 GB = unlimited)" xml:space="preserve"><value>Макс. размер папки с видео (0 ГБ = без ограничения)</value></data>
+  <data name="Keep only the best run video in a session" xml:space="preserve"><value>Хранить видео только лучшего рана сессии</value></data>
+  <data name="Video folders" xml:space="preserve"><value>Папки с видео</value></data>
+  <data name="By session" xml:space="preserve"><value>По сессиям</value></data>
+  <data name="By run" xml:space="preserve"><value>По ранам</value></data>
+  <data name="Save video for PB only" xml:space="preserve"><value>Сохранять видео только для PB</value></data>
+  <data name="To top" xml:space="preserve"><value>Наверх</value></data>
+  <data name="Keep personal best replays" xml:space="preserve"><value>Хранить реплеи личных рекордов</value></data>
+  <data name="Webcam" xml:space="preserve"><value>Веб-камера</value></data>
+  <data name="How to save video" xml:space="preserve"><value>Способ сохранения видео</value></data>
+  <data name="One video (game + webcam)" xml:space="preserve"><value>Одно видео (игра + веб-камера)</value></data>
+  <data name="Separate videos (game and webcam)" xml:space="preserve"><value>Отдельные видео (игра и веб-камера)</value></data>
+  <data name="Add webcam" xml:space="preserve"><value>Добавить веб-камеру</value></data>
+  <data name="About" xml:space="preserve"><value>О программе</value></data>
+  <data name="Unofficial. Not affiliated with KovaaK Games." xml:space="preserve"><value>Неофициальное приложение, не связанное с KovaaK Games.</value></data>
+  <data name="Playlists from " xml:space="preserve"><value>Плейлисты: </value></data>
+  <data name=" (EviL)." xml:space="preserve"><value> (EviL).</value></data>
+  <data name="Video by " xml:space="preserve"><value>Видео: </value></data>
+  <data name=" (libobs, GPL v2, " xml:space="preserve"><value> (libobs, GPL v2, </value></data>
+  <data name="Appearance" xml:space="preserve"><value>Оформление</value></data>
+  <data name="Language" xml:space="preserve"><value>Язык</value></data>
+  <data name="Theme" xml:space="preserve"><value>Тема</value></data>
+  <data name="UI size" xml:space="preserve"><value>Размер интерфейса</value></data>
+  <data name="Playlists" xml:space="preserve"><value>Плейлисты</value></data>
+  <data name="Favorite" xml:space="preserve"><value>Избранное</value></data>
+  <data name="Copy scenarios as image" xml:space="preserve"><value>Копировать сценарии как изображение</value></data>
+  <data name="Show tier on Home" xml:space="preserve"><value>Показывать ранг на главной</value></data>
+  <data name="Remove tier from Home" xml:space="preserve"><value>Убрать ранг с главной</value></data>
+  <data name="Copy sharecode" xml:space="preserve"><value>Копировать код</value></data>
+  <data name="Open on evxl.app" xml:space="preserve"><value>Открыть на evxl.app</value></data>
+  <data name="Update available" xml:space="preserve"><value>Доступно обновление</value></data>
+  <data name="Later" xml:space="preserve"><value>Позже</value></data>
+  <data name="Update" xml:space="preserve"><value>Обновить</value></data>
+  <data name="Mon" xml:space="preserve"><value>Пн</value></data>
+  <data name="Wed" xml:space="preserve"><value>Ср</value></data>
+  <data name="Fri" xml:space="preserve"><value>Пт</value></data>
+  <data name="More" xml:space="preserve"><value>Больше</value></data>
+  <data name="Less" xml:space="preserve"><value>Меньше</value></data>
+  <data name="Personal best" xml:space="preserve"><value>Личный рекорд</value></data>
+  <data name="Open" xml:space="preserve"><value>Открыть</value></data>
+  <data name="Exit" xml:space="preserve"><value>Выход</value></data>
+  <data name="Copy as image" xml:space="preserve"><value>Копировать как изображение</value></data>
+  <data name="No scenarios" xml:space="preserve"><value>Нет сценариев</value></data>
+  <data name="UNRANKED" xml:space="preserve"><value>UNRANKED</value></data>
+  <data name="Complete!" xml:space="preserve"><value>Всё пройдено!</value></data>
+  <data name="Tier Up!" xml:space="preserve"><value>Ранг повышен!</value></data>
+  <data name="Fanfare!" xml:space="preserve"><value>Фанфары!</value></data>
+  <data name="SCENARIO" xml:space="preserve"><value>СЦЕНАРИЙ</value></data>
+  <data name="Last played {0}" xml:space="preserve"><value>Последняя игра: {0}</value></data>
+  <data name="Not played yet" xml:space="preserve"><value>Ещё не играли</value></data>
+  <data name="+{0} to {1}" xml:space="preserve"><value>+{0} до {1}</value></data>
+  <data name="Need at least 3 axes" xml:space="preserve"><value>Нужно минимум 3 оси</value></data>
+  <data name="No data" xml:space="preserve"><value>Нет данных</value></data>
+  <data name="Max tier" xml:space="preserve"><value>Максимальный ранг</value></data>
+  <data name="+{0}% to next" xml:space="preserve"><value>+{0}% до следующего</value></data>
+  <data name="{0}h {1}m" xml:space="preserve"><value>{0} ч {1} мин</value></data>
+  <data name="{0}m {1}s" xml:space="preserve"><value>{0} мин {1} с</value></data>
+  <data name="just now" xml:space="preserve"><value>только что</value></data>
+  <data name="{0} min ago" xml:space="preserve"><value>{0} мин назад</value></data>
+  <data name="{0} h ago" xml:space="preserve"><value>{0} ч назад</value></data>
+  <data name="{0} d ago" xml:space="preserve"><value>{0} дн. назад</value></data>
+  <data name="Tier" xml:space="preserve"><value>Ранг</value></data>
+  <data name="Today" xml:space="preserve"><value>Сегодня</value></data>
+  <data name="Yesterday" xml:space="preserve"><value>Вчера</value></data>
+  <data name="PB" xml:space="preserve"><value>PB</value></data>
+  <data name="Best" xml:space="preserve"><value>Лучший</value></data>
+  <data name="Average" xml:space="preserve"><value>Средний</value></data>
+  <data name="Runs" xml:space="preserve"><value>Раны</value></data>
+  <data name="Last played" xml:space="preserve"><value>Последняя игра</value></data>
+  <data name="Accuracy" xml:space="preserve"><value>Точность</value></data>
+  <data name="Time" xml:space="preserve"><value>Время</value></data>
+  <data name="Trend" xml:space="preserve"><value>Тренд</value></data>
+  <data name="Run stats" xml:space="preserve"><value>Статистика рана</value></data>
+  <data name="TIER THRESHOLDS" xml:space="preserve"><value>ПОРОГИ РАНГОВ</value></data>
+  <data name="The replay data file is damaged or of an unsupported version." xml:space="preserve"><value>Файл данных реплея повреждён или имеет неподдерживаемую версию.</value></data>
+  <data name="The replay data file is damaged." xml:space="preserve"><value>Файл данных реплея повреждён.</value></data>
+  <data name="The replay data file is missing." xml:space="preserve"><value>Файл данных реплея не найден.</value></data>
+  <data name="session.json is unreadable or has no FormatVersion." xml:space="preserve"><value>Не удаётся прочитать session.json, либо в нём нет FormatVersion.</value></data>
+  <data name="session.json is empty." xml:space="preserve"><value>Файл session.json пуст.</value></data>
+  <data name="Video failed to load: " xml:space="preserve"><value>Не удалось загрузить видео: </value></data>
+  <data name="Previous run · {0}" xml:space="preserve"><value>Предыдущий ран · {0}</value></data>
+  <data name="Max age (0 days = unlimited)" xml:space="preserve"><value>Макс. срок хранения (0 дней = без ограничения)</value></data>
+  <data name="Enter 0 or more" xml:space="preserve"><value>Введите 0 или больше</value></data>
+  <data name="Must be 17 digits" xml:space="preserve"><value>Должно быть 17 цифр</value></data>
+  <data name="Enter 30–1000" xml:space="preserve"><value>Введите от 30 до 1000</value></data>
+  <data name="Size" xml:space="preserve"><value>Размер</value></data>
+  <data name="Rotate" xml:space="preserve"><value>Повернуть</value></data>
+  <data name="Remove" xml:space="preserve"><value>Удалить</value></data>
+  <data name="No webcam found" xml:space="preserve"><value>Веб-камера не найдена</value></data>
+  <data name="Version {0}" xml:space="preserve"><value>Версия {0}</value></data>
+  <data name="Days" xml:space="preserve"><value>Дни</value></data>
+  <data name="Not played" xml:space="preserve"><value>Не играли</value></data>
+  <data name="{0} runs · best {1}" xml:space="preserve"><value>Ранов: {0} · лучший {1}</value></data>
+  <data name="No matches" xml:space="preserve"><value>Ничего не найдено</value></data>
+  <data name="{0} session" xml:space="preserve"><value>Сессий: {0}</value></data>
+  <data name="{0} sessions" xml:space="preserve"><value>Сессий: {0}</value></data>
+  <data name="{0} run" xml:space="preserve"><value>Ранов: {0}</value></data>
+  <data name="{0} runs" xml:space="preserve"><value>Ранов: {0}</value></data>
+  <data name="{0} scenario" xml:space="preserve"><value>Сценариев: {0}</value></data>
+  <data name="{0} scenarios" xml:space="preserve"><value>Сценариев: {0}</value></data>
+  <data name="PB ×{0}" xml:space="preserve"><value>PB ×{0}</value></data>
+  <data name="{0} · {1} · {2} scenarios · {3} runs · " xml:space="preserve"><value>{0} · {1} · Сценариев: {2} · Ранов: {3} · </value></data>
+  <data name="{0} PBs" xml:space="preserve"><value>PB: {0}</value></data>
+  <data name="Copy session as image" xml:space="preserve"><value>Копировать сессию как изображение</value></data>
+  <data name="Delete Video" xml:space="preserve"><value>Удалить видео</value></data>
+  <data name="Click again to delete the replay for good" xml:space="preserve"><value>Нажмите ещё раз, чтобы удалить реплей навсегда</value></data>
+  <data name="Copied" xml:space="preserve"><value>Скопировано</value></data>
+  <data name="{0} of {1} scenarios played · {2} runs · {3}" xml:space="preserve"><value>Сыграно сценариев: {0} из {1} · Ранов: {2} · {3}</value></data>
+  <data name="{0} of {1} ranked" xml:space="preserve"><value>Ранг есть у {0} из {1}</value></data>
+  <data name="{0} of {1} at {2}+" xml:space="preserve"><value>{2} и выше: {0} из {1}</value></data>
+  <data name="No runs" xml:space="preserve"><value>Нет ранов</value></data>
+  <data name="30 days ago" xml:space="preserve"><value>30 дней назад</value></data>
+  <data name="Other" xml:space="preserve"><value>Другое</value></data>
+  <data name="Motion on" xml:space="preserve"><value>Анимация включена</value></data>
+  <data name="Motion off" xml:space="preserve"><value>Анимация выключена</value></data>
+  <data name="Replay" xml:space="preserve"><value>Реплей</value></data>
+  <data name="No favorites" xml:space="preserve"><value>Избранного нет</value></data>
+  <data name="Profile" xml:space="preserve"><value>Профиль</value></data>
+  <data name="Images" xml:space="preserve"><value>Изображения</value></data>
+  <data name="All files" xml:space="preserve"><value>Все файлы</value></data>
+  <data name="Loading…" xml:space="preserve"><value>Загрузка…</value></data>
+  <data name="{0} difficulties · {1} scenarios" xml:space="preserve"><value>Уровней сложности: {0} · Сценариев: {1}</value></data>
+  <data name="No Steam ID" xml:space="preserve"><value>Нет Steam ID</value></data>
+  <data name="Dark" xml:space="preserve"><value>Тёмная</value></data>
+  <data name="Light" xml:space="preserve"><value>Светлая</value></data>
+  <data name="Black" xml:space="preserve"><value>Чёрная</value></data>
+  <data name="Violet" xml:space="preserve"><value>Фиолетовый</value></data>
+  <data name="Rose" xml:space="preserve"><value>Розовый</value></data>
+  <data name="Forest" xml:space="preserve"><value>Лесной</value></data>
+  <data name="Ember" xml:space="preserve"><value>Янтарный</value></data>
+  <data name="Ocean" xml:space="preserve"><value>Океан</value></data>
+  <data name="Gold" xml:space="preserve"><value>Золотой</value></data>
+  <data name="Custom" xml:space="preserve"><value>Свой</value></data>
+  <data name="Grain" xml:space="preserve"><value>Зерно</value></data>
+  <data name="Brightness" xml:space="preserve"><value>Яркость</value></data>
+  <data name="Score" xml:space="preserve"><value>Очки</value></data>
+  <data name="Kills" xml:space="preserve"><value>Убийства</value></data>
+  <data name="Shots" xml:space="preserve"><value>Выстрелы</value></data>
+  <data name="Hits" xml:space="preserve"><value>Попадания</value></data>
+  <data name="TTK" xml:space="preserve"><value>TTK</value></data>
+  <data name="Click delay after stop" xml:space="preserve"><value>Задержка клика после остановки</value></data>
+  <data name="Ballistic ratio" xml:space="preserve"><value>Доля баллистики</value></data>
+  <data name="Acceleration variation" xml:space="preserve"><value>Разброс ускорения</value></data>
+  <data name="Overshots / kill" xml:space="preserve"><value>Перелёты / убийство</value></data>
+  <data name="Overshots" xml:space="preserve"><value>Перелёты</value></data>
+  <data name="Reloads" xml:space="preserve"><value>Перезарядки</value></data>
+  <data name="Distance moved" xml:space="preserve"><value>Пройденное расстояние</value></data>
+  <data name="Compare" xml:space="preserve"><value>Сравнить</value></data>
+  <data name="Played" xml:space="preserve"><value>Дата игры</value></data>
+  <data name="Rank" xml:space="preserve"><value>Место</value></data>
+  <data name="Sensitivity" xml:space="preserve"><value>Чувствительность</value></data>
+  <data name="This run" xml:space="preserve"><value>Этот ран</value></data>
+  <data name="Categories" xml:space="preserve"><value>Категории</value></data>
+  <data name="Subcategories" xml:space="preserve"><value>Подкатегории</value></data>
+  <data name="Scenarios" xml:space="preserve"><value>Сценарии</value></data>
+  <data name="Replays" xml:space="preserve"><value>Реплеи</value></data>
+  <data name="Record" xml:space="preserve"><value>Рекорд</value></data>
+  <data name="Sessions" xml:space="preserve"><value>Сессии</value></data>
+  <data name="Charts" xml:space="preserve"><value>Графики</value></data>
+  <data name="Skill balance" xml:space="preserve"><value>Баланс навыков</value></data>
+  <data name="Scenarios by rank" xml:space="preserve"><value>Сценарии по рангам</value></data>
+  <data name="Open Settings" xml:space="preserve"><value>Открыть настройки</value></data>
+  <data name="No ranked playlist" xml:space="preserve"><value>Нет рангового плейлиста</value></data>
+  <data name="Favorite scenarios" xml:space="preserve"><value>Избранные сценарии</value></data>
+  <data name="Favorite runs" xml:space="preserve"><value>Избранные раны</value></data>
+  <data name="Pin" xml:space="preserve"><value>Закрепить</value></data>
+  <data name="Unpin" xml:space="preserve"><value>Открепить</value></data>
+  <data name="Up to 6 pinned" xml:space="preserve"><value>Закрепить можно не больше 6</value></data>
+  <data name="Score by sensitivity" xml:space="preserve"><value>Очки по чувствительности</value></data>
+  <data name="Advice" xml:space="preserve"><value>Советы</value></data>
+  <data name="Your scores this session are {0:0}% above your recent average. Whatever you did differently today is **worth repeating**." xml:space="preserve"><value>Ваши очки в этой сессии на {0:0}% выше недавнего среднего. Что бы вы сегодня ни делали иначе, это **стоит повторять**.</value></data>
+  <data name="Your scores this session are {0:0}% below your recent average. Tired or unfocused days happen, so consider ending on an **easier scenario** or taking a break." xml:space="preserve"><value>Ваши очки в этой сессии на {0:0}% ниже недавнего среднего. Бывают дни, когда вы устали или не можете сосредоточиться, поэтому закончите на **более лёгком сценарии** или сделайте перерыв.</value></data>
+  <data name="{0} is {1:0}% below your recent average this session. It is the scenario holding the session back, so give it a **few extra warm-up runs**." xml:space="preserve"><value>{0}: в этой сессии на {1:0}% ниже вашего недавнего среднего. Именно этот сценарий тянет сессию вниз, так что сделайте на нём **несколько дополнительных разминочных ранов**.</value></data>
+  <data name="{0} is {1:0}% above your recent average this session. You are in rhythm on it, so this is a good time to **push for a personal best**." xml:space="preserve"><value>{0}: в этой сессии на {1:0}% выше вашего недавнего среднего. Вы в ритме, так что сейчас хорошее время, чтобы **замахнуться на личный рекорд**.</value></data>
+  <data name="The second half of your session scored {0:0}% lower than the first. Focus tends to fade after a while, so try a **short break** halfway or end the session sooner." xml:space="preserve"><value>Во второй половине сессии очки на {0:0}% ниже, чем в первой. Со временем концентрация падает, поэтому сделайте **короткий перерыв** посередине или завершайте сессию раньше.</value></data>
+  <data name="The first half of your session scored {0:0}% lower than the second. You seem to need time to settle in, so **warm up** on an easier scenario before the ones that count." xml:space="preserve"><value>В первой половине сессии очки на {0:0}% ниже, чем во второй. Похоже, вам нужно время, чтобы войти в ритм, поэтому **разминайтесь** на более лёгком сценарии перед важными.</value></data>
+  <data name="You fired {0:0.00} shots per kill at targets already dead this session, against {1:0.00} recently. Tiredness or impatience often causes this, so **release the click** the moment a target breaks." xml:space="preserve"><value>В этой сессии вы делали {0:0.00} выстрела на убийство по уже убитым целям, а недавно — {1:0.00}. Обычно причина в усталости или спешке, поэтому **отпускайте клик** сразу, как цель разбита.</value></data>
+  <data name="Your last 5 runs average {0:0}% below the 5 before. Fatigue or lost focus often causes a dip like this, so take a **short break** or warm up on an easier scenario before continuing." xml:space="preserve"><value>Среднее последних 5 ранов на {0:0}% ниже, чем у 5 предыдущих. Такой спад часто вызван усталостью или потерей концентрации, поэтому сделайте **короткий перерыв** или разомнитесь на более лёгком сценарии, прежде чем продолжать.</value></data>
+  <data name="Your best runs have {0:0}% smoother mouse movement. Your good runs reach each target in **one clean motion**, so try not to stop and correct on the way." xml:space="preserve"><value>В лучших ранах движение мыши плавнее на {0:0}%. В хороших ранах вы доходите до каждой цели **одним чистым движением**, так что не останавливайтесь и не поправляйте прицел по пути.</value></data>
+  <data name="Your best runs change direction {0:0}% less often. Frequent reversals usually mean **overcorrecting**, so try making smaller, calmer adjustments." xml:space="preserve"><value>В лучших ранах направление меняется на {0:0}% реже. Частые развороты обычно значат **перекоррекцию**, так что делайте более мелкие и спокойные поправки.</value></data>
+  <data name="Your best runs click {0:0} ms sooner after the mouse stops. Waiting after you arrive costs time, so try **clicking as you land** on the target." xml:space="preserve"><value>В лучших ранах клик после остановки мыши происходит на {0:0} мс раньше. Ожидание после наведения отнимает время, так что **кликайте в момент наведения** на цель.</value></data>
+  <data name="Your best runs react in {0:0.00}s, your worst in {1:0.00}s. Deciding on the next target **earlier** saves time, so look for it before you finish the current one." xml:space="preserve"><value>В лучших ранах реакция составляет {0:0.00} с, в худших — {1:0.00} с. Если выбирать следующую цель **раньше**, можно сэкономить время, поэтому ищите её ещё до того, как добьёте текущую.</value></data>
+  <data name="Your average is {0:0}% higher at {1} cm/360 ({2} runs) than at your usual {3} cm/360. This scenario rewards **fine control** more than reach, so try playing it at the lower sensitivity more often." xml:space="preserve"><value>Ваш средний результат на {1} cm/360 (ранов: {2}) на {0:0}% выше, чем на обычных {3} cm/360. В этом сценарии важнее **тонкий контроль**, чем дальность, так что играйте на нём с более низкой чувствительностью чаще.</value></data>
+  <data name="Your average is {0:0}% higher at {1} cm/360 ({2} runs) than at your usual {3} cm/360. This scenario rewards **reaching targets quickly** more than fine control, so try playing it at the higher sensitivity more often." xml:space="preserve"><value>Ваш средний результат на {1} cm/360 (ранов: {2}) на {0:0}% выше, чем на обычных {3} cm/360. В этом сценарии важнее **быстро добираться до целей**, чем тонкий контроль, так что играйте на нём с более высокой чувствительностью чаще.</value></data>
+  <data name="Your last 5 runs average {0:0}% below the 5 before. A drop this large rarely recovers by playing on, so **stop this scenario for today**; practice while tired mostly trains tired habits." xml:space="preserve"><value>Среднее последних 5 ранов на {0:0}% ниже, чем у 5 предыдущих. Такой сильный спад редко проходит, если играть дальше, поэтому **на сегодня закончите с этим сценарием**: тренировка в усталом состоянии в основном закрепляет усталые привычки.</value></data>
+  <data name="{0} plays since your last personal best. Repeating the same drill has stopped raising it, so spend a while on a **variant** of this scenario (smaller or faster targets, another sensitivity) and then come back." xml:space="preserve"><value>С последнего личного рекорда сыграно раз: {0}. Повторение одного и того же упражнения больше не повышает результат, поэтому потренируйтесь какое-то время на **варианте** этого сценария (цели меньше или быстрее, другая чувствительность), а потом вернитесь.</value></data>
+  <data name="Your first run of each sitting scores {0:0}% below the runs after it. The first attempt goes to getting used to the scenario again, so treat it as a **warm-up run** and judge yourself on the ones that follow." xml:space="preserve"><value>Первый ран в каждом подходе на {0:0}% хуже последующих. Первая попытка уходит на то, чтобы заново привыкнуть к сценарию, так что считайте её **разминочным раном** и оценивайте себя по следующим.</value></data>
+  <data name="After {0} runs in a row your scores drop {1:0}%. Long streaks on one scenario stop paying off, so **switch to another scenario** after about {0} runs and come back later." xml:space="preserve"><value>После серии подряд длиной {0} очки падают на {1:0}%. Долгие серии на одном сценарии перестают приносить пользу, поэтому после серии такой длины **переключайтесь на другой сценарий** и возвращайтесь позже.</value></data>
+  <data name="Your best runs take a straighter path to each target ({0:P0} direct, against {1:P0} in your worst). Curved or wandering paths waste time, so **aim in a straight line** at the target before you move." xml:space="preserve"><value>В лучших ранах путь к каждой цели прямее (прямолинейность {0:P0}, в худших — {1:P0}). Кривые или блуждающие траектории отнимают время, поэтому перед движением **наводитесь на цель по прямой**.</value></data>
+  <data name="{0} of the {1} scenarios this session got only one run. A single attempt mostly goes to getting used to the scenario, so play **fewer scenarios a few runs each**." xml:space="preserve"><value>Сценариев, сыгранных в этой сессии всего один раз: {0} из {1}. Единственная попытка в основном уходит на привыкание, поэтому играйте **меньше сценариев, но по нескольку ранов в каждом**.</value></data>
+  <data name="You played {0} {1} times in a row, and the runs after the first {2} scored {3:0}% lower. Returns fade on a long streak, so **move on** to another scenario sooner and come back later." xml:space="preserve"><value>Вы играли в {0} подряд (серия: {1}), и раны после {2}-го оказались на {3:0}% хуже. Долгая серия приносит всё меньше пользы, поэтому **переходите** на другой сценарий раньше и возвращайтесь позже.</value></data>
+  <data name="Your scores are highest when you hit {0:P0}–{1:P0} of your shots. Your last 10 runs average {2:P0}, so take **a little more care** with each shot." xml:space="preserve"><value>Очки выше всего, когда вы попадаете в {0:P0}–{1:P0} выстрелов. В последних 10 ранах средняя точность {2:P0}, поэтому стреляйте **чуть аккуратнее**.</value></data>
+  <data name="Your scores are highest when you hit {0:P0}–{1:P0} of your shots. Your last 10 runs average {2:P0}, so **push the pace** and take shots sooner, even if a few more miss." xml:space="preserve"><value>Очки выше всего, когда вы попадаете в {0:P0}–{1:P0} выстрелов. В последних 10 ранах средняя точность {2:P0}, поэтому **ускорьте темп** и стреляйте раньше, даже если промахов станет чуть больше.</value></data>
+  <data name="Your best runs fire {0:0.00} shots per kill at targets that are already dead, your worst {1:0.00}. Those extra shots cost time, so **release the click** the moment a target breaks." xml:space="preserve"><value>В лучших ранах вы делаете {0:0.00} выстрела на убийство по уже убитым целям, в худших — {1:0.00}. Эти лишние выстрелы отнимают время, поэтому **отпускайте клик** сразу, как цель разбита.</value></data>
+  <data name="Accuracy by sensitivity" xml:space="preserve"><value>Точность по чувствительности</value></data>
+  <data name="cm/360" xml:space="preserve"><value>cm/360</value></data>
+  <data name="Mouse speed" xml:space="preserve"><value>Скорость мыши</value></data>
+  <data name="Last play" xml:space="preserve"><value>Последняя игра</value></data>
+  <data name="Tracking" xml:space="preserve"><value>Трекинг</value></data>
+  <data name="Switching" xml:space="preserve"><value>Свитчинг</value></data>
+  <data name="Flick" xml:space="preserve"><value>Флик</value></data>
+  <data name="Strongest" xml:space="preserve"><value>Сильнейший</value></data>
+  <data name="Tier level" xml:space="preserve"><value>Уровень ранга</value></data>
+  <data name="Average speed" xml:space="preserve"><value>Средняя скорость</value></data>
+  <data name="Firing speed" xml:space="preserve"><value>Скорость при стрельбе</value></data>
+  <data name="Direction changes" xml:space="preserve"><value>Смены направления</value></data>
+  <data name="Firing time" xml:space="preserve"><value>Доля времени стрельбы</value></data>
+  <data name="Max speed" xml:space="preserve"><value>Макс. скорость</value></data>
+  <data name="Non-firing speed" xml:space="preserve"><value>Скорость без стрельбы</value></data>
+  <data name="Flick distance" xml:space="preserve"><value>Дистанция флика</value></data>
+  <data name="Peak flick speed" xml:space="preserve"><value>Пиковая скорость флика</value></data>
+  <data name="Flick time" xml:space="preserve"><value>Время флика</value></data>
+  <data name="Reaction time" xml:space="preserve"><value>Время реакции</value></data>
+  <data name="Path efficiency" xml:space="preserve"><value>Эффективность пути</value></data>
+  <data name="Time between kills" xml:space="preserve"><value>Время между убийствами</value></data>
+  <data name="Speed variation" xml:space="preserve"><value>Разброс скорости</value></data>
+  <data name="Jerk" xml:space="preserve"><value>Рывок</value></data>
+  <data name="Top 5%" xml:space="preserve"><value>Лучшие 5%</value></data>
+  <data name="Bottom 5%" xml:space="preserve"><value>Худшие 5%</value></data>
+  <data name="Apply" xml:space="preserve"><value>Применить</value></data>
+  <data name="Click to edit" xml:space="preserve"><value>Нажмите, чтобы изменить</value></data>
+  <data name="Recorded: {0}" xml:space="preserve"><value>Записано: {0}</value></data>
+  <data name="Downloading…" xml:space="preserve"><value>Загрузка…</value></data>
+  <data name="Downloading… {0}%" xml:space="preserve"><value>Загрузка… {0}%</value></data>
+  <data name="Restarting…" xml:space="preserve"><value>Перезапуск…</value></data>
+  <data name="Update failed. Download it from the release page instead." xml:space="preserve"><value>Не удалось обновиться. Скачайте обновление со страницы релиза.</value></data>
+  <data name="Stats" xml:space="preserve"><value>Статистика</value></data>
+  <data name="Auto" xml:space="preserve"><value>Авто</value></data>
+  <data name="Rank up" xml:space="preserve"><value>Повышение ранга</value></data>
+  <data name="PB streak" xml:space="preserve"><value>Серия PB</value></data>
+  <data name="Recent" xml:space="preserve"><value>Недавние</value></data>
+  <data name="New" xml:space="preserve"><value>Новые</value></data>
+  <data name="Played lately" xml:space="preserve"><value>Играл недавно</value></data>
+  <data name="Not played lately" xml:space="preserve"><value>Давно не играл</value></data>
+  <data name="Never played" xml:space="preserve"><value>Ни разу не играл</value></data>
+  <data name="Short" xml:space="preserve"><value>Короткие</value></data>
+  <data name="Long" xml:space="preserve"><value>Длинные</value></data>
+  <data name="Favorites" xml:space="preserve"><value>Избранное</value></data>
+  <data name="Beginner" xml:space="preserve"><value>Начальный</value></data>
+  <data name="Intermediate" xml:space="preserve"><value>Средний</value></data>
+  <data name="Advanced" xml:space="preserve"><value>Продвинутый</value></data>
+  <data name="Last 30 days" xml:space="preserve"><value>Последние 30 дней</value></data>
+  <data name="All time" xml:space="preserve"><value>Всё время</value></data>
+  <data name="This session" xml:space="preserve"><value>Эта сессия</value></data>
+  <data name="Per run average" xml:space="preserve"><value>Среднее за ран</value></data>
+  <data name="Run length" xml:space="preserve"><value>Длительность рана</value></data>
+  <data name="Time of day" xml:space="preserve"><value>Время суток</value></data>
+  <data name="Average / Best" xml:space="preserve"><value>Средний / лучший</value></data>
+  <data name="Continue in the app" xml:space="preserve"><value>Продолжить в приложении</value></data>
+  <data name="Loading the video..." xml:space="preserve"><value>Загрузка видео...</value></data>
+  <data name="Loading..." xml:space="preserve"><value>Загрузка...</value></data>
+  <data name="No overview yet. Start the app once so it can write it." xml:space="preserve"><value>Обзора пока нет. Запустите приложение один раз, чтобы оно его создало.</value></data>
+  <data name="Play a replay once to choose the folder." xml:space="preserve"><value>Воспроизведите реплей один раз, чтобы выбрать папку.</value></data>
+  <data name="Play replay ({0})" xml:space="preserve"><value>Воспроизвести реплей ({0})</value></data>
+  <data name="Select folder" xml:space="preserve"><value>Выбрать папку</value></data>
+  <data name="Select the folder that has your replay videos:" xml:space="preserve"><value>Выберите папку с видео реплеев:</value></data>
+  <data name="Statistics" xml:space="preserve"><value>Статистика</value></data>
+  <data name="The video could not be read: " xml:space="preserve"><value>Не удалось прочитать видео: </value></data>
+  <data name="The video was not found. Select the folder that has your replay videos:" xml:space="preserve"><value>Видео не найдено. Выберите папку с видео реплеев:</value></data>
+  <data name="This browser cannot open a folder of videos. Use Chrome or Edge." xml:space="preserve"><value>Этот браузер не может открыть папку с видео. Используйте Chrome или Edge.</value></data>
+</root>

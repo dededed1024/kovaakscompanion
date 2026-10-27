@@ -38,7 +38,7 @@
         <SolidColorBrush x:Key="AccentSoft" Color="#330A84FF"/>
         <SolidColorBrush x:Key="BgFade" Color="{DynamicResource BgFadeColor}"/>
         <Color x:Key="BgClearColor">#001C1C1E</Color>
-        <FontFamily x:Key="UiFont">pack://application:,,,/Fonts/#Pretendard, Segoe UI Variable Text, Segoe UI, Malgun Gothic</FontFamily>
+        <FontFamily x:Key="UiFont">pack://application:,,,/Fonts/#Pretendard, Segoe UI Variable Text, Segoe UI, Malgun Gothic, Microsoft YaHei UI</FontFamily>
 
         <CornerRadius x:Key="RadiusS">8</CornerRadius>
         <CornerRadius x:Key="RadiusM">12</CornerRadius>

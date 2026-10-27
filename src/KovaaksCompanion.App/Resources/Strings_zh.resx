@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Search" xml:space="preserve"><value>搜索</value></data>
+  <data name="Settings" xml:space="preserve"><value>设置</value></data>
+  <data name="Minimize" xml:space="preserve"><value>最小化</value></data>
+  <data name="Maximize" xml:space="preserve"><value>最大化</value></data>
+  <data name="Restore" xml:space="preserve"><value>还原</value></data>
+  <data name="Close" xml:space="preserve"><value>关闭</value></data>
+  <data name="Play" xml:space="preserve"><value>播放</value></data>
+  <data name="Mute" xml:space="preserve"><value>静音</value></data>
+  <data name="Unmute" xml:space="preserve"><value>取消静音</value></data>
+  <data name="Show in Explorer" xml:space="preserve"><value>在资源管理器中显示</value></data>
+  <data name="No sessions" xml:space="preserve"><value>暂无训练</value></data>
+  <data name="Favorite session" xml:space="preserve"><value>收藏训练</value></data>
+  <data name="Unfavorite session" xml:space="preserve"><value>取消收藏训练</value></data>
+  <data name="Progress" xml:space="preserve"><value>进度</value></data>
+  <data name="Name" xml:space="preserve"><value>名称</value></data>
+  <data name="Plays" xml:space="preserve"><value>游玩次数</value></data>
+  <data name="Newest" xml:space="preserve"><value>最新</value></data>
+  <data name="Oldest" xml:space="preserve"><value>最早</value></data>
+  <data name="Longest" xml:space="preserve"><value>游玩时长</value></data>
+  <data name="Favorite playlist" xml:space="preserve"><value>收藏播放列表</value></data>
+  <data name="Unfavorite playlist" xml:space="preserve"><value>取消收藏播放列表</value></data>
+  <data name="Favorite scenario" xml:space="preserve"><value>收藏场景</value></data>
+  <data name="Favorite replay" xml:space="preserve"><value>收藏回放</value></data>
+  <data name="Up to 6 favorites" xml:space="preserve"><value>最多收藏 6 个</value></data>
+  <data name="Overlay the previous local run" xml:space="preserve"><value>叠加显示上一局本地成绩</value></data>
+  <data name="Overview" xml:space="preserve"><value>概览</value></data>
+  <data name="Prev run" xml:space="preserve"><value>上一局</value></data>
+  <data name="Trail" xml:space="preserve"><value>轨迹</value></data>
+  <data name="Show or hide the trail (T)" xml:space="preserve"><value>显示/隐藏轨迹 (T)</value></data>
+  <data name="Step back 1/60 s (←)" xml:space="preserve"><value>后退 1/60 秒 (←)</value></data>
+  <data name="Play / pause (Space)" xml:space="preserve"><value>播放 / 暂停 (Space)</value></data>
+  <data name="Step forward 1/60 s (→)" xml:space="preserve"><value>前进 1/60 秒 (→)</value></data>
+  <data name="Playback speed" xml:space="preserve"><value>播放速度</value></data>
+  <data name="Fullscreen (F)" xml:space="preserve"><value>全屏 (F)</value></data>
+  <data name="Exit fullscreen (F)" xml:space="preserve"><value>退出全屏 (F)</value></data>
+  <data name="No local runs yet" xml:space="preserve"><value>还没有本地成绩</value></data>
+  <data name="General" xml:space="preserve"><value>常规</value></data>
+  <data name="KovaaK's folder" xml:space="preserve"><value>KovaaK's 文件夹</value></data>
+  <data name="Browse…" xml:space="preserve"><value>浏览…</value></data>
+  <data name="Output folder" xml:space="preserve"><value>保存文件夹</value></data>
+  <data name="Steam ID" xml:space="preserve"><value>Steam ID</value></data>
+  <data name="Install userscript" xml:space="preserve"><value>安装用户脚本</value></data>
+  <data name="Browser replay player" xml:space="preserve"><value>浏览器回放播放</value></data>
+  <data name="A userscript puts a video icon next to your recorded scenarios on evxl.app and app.voltaic.gg. The icon opens a popup that plays the clip, with or without this app running." xml:space="preserve"><value>用户脚本会在 evxl.app 和 app.voltaic.gg 上已录制场景的旁边添加一个视频图标。点击图标会弹出窗口播放视频，即使本应用没有运行也可以。</value></data>
+  <data name="1. Install the Tampermonkey extension in your browser." xml:space="preserve"><value>1. 在浏览器中安装 Tampermonkey 扩展。</value></data>
+  <data name="2. On the browser extensions page, open the details of Tampermonkey and turn on Allow user scripts and Allow access to file URLs." xml:space="preserve"><value>2. 在浏览器扩展页面中打开 Tampermonkey 的详细信息，开启“允许运行用户脚本”和“允许访问文件网址”。</value></data>
+  <data name="3. Press Install userscript, then confirm the install in the tab that opens." xml:space="preserve"><value>3. 点击“安装用户脚本”，然后在打开的标签页中确认安装。</value></data>
+  <data name="4. On the site, press a video icon and select the folder the popup shows (once per site; Chrome or Edge)." xml:space="preserve"><value>4. 在网站上点击视频图标，并选择弹窗中显示的文件夹（每个网站仅需一次；需使用 Chrome 或 Edge）。</value></data>
+  <data name="Could not open the browser" xml:space="preserve"><value>无法打开浏览器</value></data>
+  <data name="Exit when the window is closed" xml:space="preserve"><value>关闭窗口时退出</value></data>
+  <data name="Show in system tray" xml:space="preserve"><value>在系统托盘中显示</value></data>
+  <data name="Update automatically" xml:space="preserve"><value>自动更新</value></data>
+  <data name="What's new" xml:space="preserve"><value>更新内容</value></data>
+  <data name="Start with Windows" xml:space="preserve"><value>随 Windows 启动</value></data>
+  <data name="Start with KovaaK's" xml:space="preserve"><value>随 KovaaK's 启动</value></data>
+  <data name="Exit with KovaaK's" xml:space="preserve"><value>随 KovaaK's 退出</value></data>
+  <data name="Steam must be closed to change the launch option. Close Steam now? It restarts afterwards." xml:space="preserve"><value>更改启动选项需要先关闭 Steam。现在关闭 Steam 吗？完成后会自动重新启动。</value></data>
+  <data name="Could not change the Steam launch option" xml:space="preserve"><value>无法更改 Steam 启动选项</value></data>
+  <data name="Cancel" xml:space="preserve"><value>取消</value></data>
+  <data name="Recording" xml:space="preserve"><value>录制</value></data>
+  <data name="Recording quality" xml:space="preserve"><value>录制画质</value></data>
+  <data name="Low" xml:space="preserve"><value>低</value></data>
+  <data name="Medium" xml:space="preserve"><value>中</value></data>
+  <data name="High" xml:space="preserve"><value>高</value></data>
+  <data name="Ultra" xml:space="preserve"><value>极高</value></data>
+  <data name="Recording FPS" xml:space="preserve"><value>录制帧率</value></data>
+  <data name="Max video folder size (0 GB = unlimited)" xml:space="preserve"><value>视频文件夹最大容量 (0 GB = 不限)</value></data>
+  <data name="Keep only the best run video in a session" xml:space="preserve"><value>每次训练只保留最佳成绩的视频</value></data>
+  <data name="Video folders" xml:space="preserve"><value>视频文件夹划分</value></data>
+  <data name="By session" xml:space="preserve"><value>按训练</value></data>
+  <data name="By run" xml:space="preserve"><value>按局</value></data>
+  <data name="Save video for PB only" xml:space="preserve"><value>仅保存 PB 视频</value></data>
+  <data name="To top" xml:space="preserve"><value>回到顶部</value></data>
+  <data name="Keep personal best replays" xml:space="preserve"><value>保留 PB 回放</value></data>
+  <data name="Webcam" xml:space="preserve"><value>摄像头</value></data>
+  <data name="How to save video" xml:space="preserve"><value>视频保存方式</value></data>
+  <data name="One video (game + webcam)" xml:space="preserve"><value>单个视频（游戏 + 摄像头）</value></data>
+  <data name="Separate videos (game and webcam)" xml:space="preserve"><value>分开保存（游戏、摄像头）</value></data>
+  <data name="Add webcam" xml:space="preserve"><value>添加摄像头</value></data>
+  <data name="About" xml:space="preserve"><value>关于</value></data>
+  <data name="Unofficial. Not affiliated with KovaaK Games." xml:space="preserve"><value>非官方应用，与 KovaaK Games 无关。</value></data>
+  <data name="Playlists from " xml:space="preserve"><value>播放列表来源：</value></data>
+  <data name=" (EviL)." xml:space="preserve"><value> (EviL)。</value></data>
+  <data name="Video by " xml:space="preserve"><value>视频处理：</value></data>
+  <data name=" (libobs, GPL v2, " xml:space="preserve"><value> (libobs, GPL v2, </value></data>
+  <data name="Appearance" xml:space="preserve"><value>外观</value></data>
+  <data name="Language" xml:space="preserve"><value>语言</value></data>
+  <data name="Theme" xml:space="preserve"><value>主题</value></data>
+  <data name="UI size" xml:space="preserve"><value>界面大小</value></data>
+  <data name="Playlists" xml:space="preserve"><value>播放列表</value></data>
+  <data name="Favorite" xml:space="preserve"><value>收藏</value></data>
+  <data name="Copy scenarios as image" xml:space="preserve"><value>将场景复制为图片</value></data>
+  <data name="Show tier on Home" xml:space="preserve"><value>在主页显示段位</value></data>
+  <data name="Remove tier from Home" xml:space="preserve"><value>从主页移除段位</value></data>
+  <data name="Copy sharecode" xml:space="preserve"><value>复制分享码</value></data>
+  <data name="Open on evxl.app" xml:space="preserve"><value>在 evxl.app 中打开</value></data>
+  <data name="Update available" xml:space="preserve"><value>有可用更新</value></data>
+  <data name="Later" xml:space="preserve"><value>稍后</value></data>
+  <data name="Update" xml:space="preserve"><value>更新</value></data>
+  <data name="Mon" xml:space="preserve"><value>周一</value></data>
+  <data name="Wed" xml:space="preserve"><value>周三</value></data>
+  <data name="Fri" xml:space="preserve"><value>周五</value></data>
+  <data name="More" xml:space="preserve"><value>多</value></data>
+  <data name="Less" xml:space="preserve"><value>少</value></data>
+  <data name="Personal best" xml:space="preserve"><value>个人最佳</value></data>
+  <data name="Open" xml:space="preserve"><value>打开</value></data>
+  <data name="Exit" xml:space="preserve"><value>退出</value></data>
+  <data name="Copy as image" xml:space="preserve"><value>复制为图片</value></data>
+  <data name="No scenarios" xml:space="preserve"><value>没有场景</value></data>
+  <data name="UNRANKED" xml:space="preserve"><value>UNRANKED</value></data>
+  <data name="Complete!" xml:space="preserve"><value>全部完成！</value></data>
+  <data name="Tier Up!" xml:space="preserve"><value>段位提升！</value></data>
+  <data name="Fanfare!" xml:space="preserve"><value>喝彩！</value></data>
+  <data name="SCENARIO" xml:space="preserve"><value>场景</value></data>
+  <data name="Last played {0}" xml:space="preserve"><value>上次游玩 {0}</value></data>
+  <data name="Not played yet" xml:space="preserve"><value>尚未游玩</value></data>
+  <data name="+{0} to {1}" xml:space="preserve"><value>距 {1} 还差 {0}</value></data>
+  <data name="Need at least 3 axes" xml:space="preserve"><value>至少需要 3 个轴</value></data>
+  <data name="No data" xml:space="preserve"><value>没有数据</value></data>
+  <data name="Max tier" xml:space="preserve"><value>最高段位</value></data>
+  <data name="+{0}% to next" xml:space="preserve"><value>距下一段位 +{0}%</value></data>
+  <data name="{0}h {1}m" xml:space="preserve"><value>{0}小时{1}分钟</value></data>
+  <data name="{0}m {1}s" xml:space="preserve"><value>{0}分{1}秒</value></data>
+  <data name="just now" xml:space="preserve"><value>刚刚</value></data>
+  <data name="{0} min ago" xml:space="preserve"><value>{0} 分钟前</value></data>
+  <data name="{0} h ago" xml:space="preserve"><value>{0} 小时前</value></data>
+  <data name="{0} d ago" xml:space="preserve"><value>{0} 天前</value></data>
+  <data name="Tier" xml:space="preserve"><value>段位</value></data>
+  <data name="Today" xml:space="preserve"><value>今天</value></data>
+  <data name="Yesterday" xml:space="preserve"><value>昨天</value></data>
+  <data name="PB" xml:space="preserve"><value>PB</value></data>
+  <data name="Best" xml:space="preserve"><value>最佳</value></data>
+  <data name="Average" xml:space="preserve"><value>平均</value></data>
+  <data name="Runs" xml:space="preserve"><value>局数</value></data>
+  <data name="Last played" xml:space="preserve"><value>上次游玩</value></data>
+  <data name="Accuracy" xml:space="preserve"><value>准确率</value></data>
+  <data name="Time" xml:space="preserve"><value>时间</value></data>
+  <data name="Trend" xml:space="preserve"><value>趋势</value></data>
+  <data name="Run stats" xml:space="preserve"><value>成绩统计</value></data>
+  <data name="TIER THRESHOLDS" xml:space="preserve"><value>段位门槛</value></data>
+  <data name="The replay data file is damaged or of an unsupported version." xml:space="preserve"><value>回放数据文件已损坏，或版本不受支持。</value></data>
+  <data name="The replay data file is damaged." xml:space="preserve"><value>回放数据文件已损坏。</value></data>
+  <data name="The replay data file is missing." xml:space="preserve"><value>回放数据文件不存在。</value></data>
+  <data name="session.json is unreadable or has no FormatVersion." xml:space="preserve"><value>无法读取 session.json，或其中没有 FormatVersion。</value></data>
+  <data name="session.json is empty." xml:space="preserve"><value>session.json 为空。</value></data>
+  <data name="Video failed to load: " xml:space="preserve"><value>视频加载失败：</value></data>
+  <data name="Previous run · {0}" xml:space="preserve"><value>上一局 · {0}</value></data>
+  <data name="Max age (0 days = unlimited)" xml:space="preserve"><value>最长保留时间 (0 天 = 不限)</value></data>
+  <data name="Enter 0 or more" xml:space="preserve"><value>请输入 0 或更大的数</value></data>
+  <data name="Must be 17 digits" xml:space="preserve"><value>必须是 17 位数字</value></data>
+  <data name="Enter 30–1000" xml:space="preserve"><value>请输入 30–1000</value></data>
+  <data name="Size" xml:space="preserve"><value>大小</value></data>
+  <data name="Rotate" xml:space="preserve"><value>旋转</value></data>
+  <data name="Remove" xml:space="preserve"><value>删除</value></data>
+  <data name="No webcam found" xml:space="preserve"><value>未找到摄像头</value></data>
+  <data name="Version {0}" xml:space="preserve"><value>版本 {0}</value></data>
+  <data name="Days" xml:space="preserve"><value>天</value></data>
+  <data name="Not played" xml:space="preserve"><value>未游玩</value></data>
+  <data name="{0} runs · best {1}" xml:space="preserve"><value>{0} 局 · 最佳 {1}</value></data>
+  <data name="No matches" xml:space="preserve"><value>没有结果</value></data>
+  <data name="{0} session" xml:space="preserve"><value>{0} 次训练</value></data>
+  <data name="{0} sessions" xml:space="preserve"><value>{0} 次训练</value></data>
+  <data name="{0} run" xml:space="preserve"><value>{0} 局</value></data>
+  <data name="{0} runs" xml:space="preserve"><value>{0} 局</value></data>
+  <data name="{0} scenario" xml:space="preserve"><value>{0} 个场景</value></data>
+  <data name="{0} scenarios" xml:space="preserve"><value>{0} 个场景</value></data>
+  <data name="PB ×{0}" xml:space="preserve"><value>PB ×{0}</value></data>
+  <data name="{0} · {1} · {2} scenarios · {3} runs · " xml:space="preserve"><value>{0} · {1} · {2} 个场景 · {3} 局 · </value></data>
+  <data name="{0} PBs" xml:space="preserve"><value>{0} 个 PB</value></data>
+  <data name="Copy session as image" xml:space="preserve"><value>将训练复制为图片</value></data>
+  <data name="Delete Video" xml:space="preserve"><value>删除视频</value></data>
+  <data name="Click again to delete the replay for good" xml:space="preserve"><value>再点一次将永久删除回放</value></data>
+  <data name="Copied" xml:space="preserve"><value>已复制</value></data>
+  <data name="{0} of {1} scenarios played · {2} runs · {3}" xml:space="preserve"><value>已玩 {0}/{1} 个场景 · {2} 局 · {3}</value></data>
+  <data name="{0} of {1} ranked" xml:space="preserve"><value>已定级 {0}/{1}</value></data>
+  <data name="{0} of {1} at {2}+" xml:space="preserve"><value>{2} 及以上：{0}/{1}</value></data>
+  <data name="No runs" xml:space="preserve"><value>没有记录</value></data>
+  <data name="30 days ago" xml:space="preserve"><value>30 天前</value></data>
+  <data name="Other" xml:space="preserve"><value>其他</value></data>
+  <data name="Motion on" xml:space="preserve"><value>动效开</value></data>
+  <data name="Motion off" xml:space="preserve"><value>动效关</value></data>
+  <data name="Replay" xml:space="preserve"><value>回放</value></data>
+  <data name="No favorites" xml:space="preserve"><value>没有收藏</value></data>
+  <data name="Profile" xml:space="preserve"><value>个人资料</value></data>
+  <data name="Images" xml:space="preserve"><value>图片</value></data>
+  <data name="All files" xml:space="preserve"><value>所有文件</value></data>
+  <data name="Loading…" xml:space="preserve"><value>加载中…</value></data>
+  <data name="{0} difficulties · {1} scenarios" xml:space="preserve"><value>{0} 个难度 · {1} 个场景</value></data>
+  <data name="No Steam ID" xml:space="preserve"><value>没有 Steam ID</value></data>
+  <data name="Dark" xml:space="preserve"><value>深色</value></data>
+  <data name="Light" xml:space="preserve"><value>浅色</value></data>
+  <data name="Black" xml:space="preserve"><value>纯黑</value></data>
+  <data name="Violet" xml:space="preserve"><value>紫罗兰</value></data>
+  <data name="Rose" xml:space="preserve"><value>玫瑰</value></data>
+  <data name="Forest" xml:space="preserve"><value>森林</value></data>
+  <data name="Ember" xml:space="preserve"><value>余烬</value></data>
+  <data name="Ocean" xml:space="preserve"><value>海洋</value></data>
+  <data name="Gold" xml:space="preserve"><value>金色</value></data>
+  <data name="Custom" xml:space="preserve"><value>自定义</value></data>
+  <data name="Grain" xml:space="preserve"><value>颗粒</value></data>
+  <data name="Brightness" xml:space="preserve"><value>亮度</value></data>
+  <data name="Score" xml:space="preserve"><value>分数</value></data>
+  <data name="Kills" xml:space="preserve"><value>击杀</value></data>
+  <data name="Shots" xml:space="preserve"><value>射击</value></data>
+  <data name="Hits" xml:space="preserve"><value>命中</value></data>
+  <data name="TTK" xml:space="preserve"><value>TTK</value></data>
+  <data name="Click delay after stop" xml:space="preserve"><value>停止后点击延迟</value></data>
+  <data name="Ballistic ratio" xml:space="preserve"><value>弹道比例</value></data>
+  <data name="Acceleration variation" xml:space="preserve"><value>加速度波动</value></data>
+  <data name="Overshots / kill" xml:space="preserve"><value>过冲 / 击杀</value></data>
+  <data name="Overshots" xml:space="preserve"><value>过冲</value></data>
+  <data name="Reloads" xml:space="preserve"><value>换弹</value></data>
+  <data name="Distance moved" xml:space="preserve"><value>移动距离</value></data>
+  <data name="Compare" xml:space="preserve"><value>对比</value></data>
+  <data name="Played" xml:space="preserve"><value>游玩时间</value></data>
+  <data name="Rank" xml:space="preserve"><value>排名</value></data>
+  <data name="Sensitivity" xml:space="preserve"><value>灵敏度</value></data>
+  <data name="This run" xml:space="preserve"><value>本局</value></data>
+  <data name="Categories" xml:space="preserve"><value>类别</value></data>
+  <data name="Subcategories" xml:space="preserve"><value>子类别</value></data>
+  <data name="Scenarios" xml:space="preserve"><value>场景</value></data>
+  <data name="Replays" xml:space="preserve"><value>回放</value></data>
+  <data name="Record" xml:space="preserve"><value>记录</value></data>
+  <data name="Sessions" xml:space="preserve"><value>训练</value></data>
+  <data name="Charts" xml:space="preserve"><value>图表</value></data>
+  <data name="Skill balance" xml:space="preserve"><value>技能均衡</value></data>
+  <data name="Scenarios by rank" xml:space="preserve"><value>各段位场景数</value></data>
+  <data name="Open Settings" xml:space="preserve"><value>打开设置</value></data>
+  <data name="No ranked playlist" xml:space="preserve"><value>没有段位播放列表</value></data>
+  <data name="Favorite scenarios" xml:space="preserve"><value>收藏的场景</value></data>
+  <data name="Favorite runs" xml:space="preserve"><value>收藏的成绩</value></data>
+  <data name="Pin" xml:space="preserve"><value>固定</value></data>
+  <data name="Unpin" xml:space="preserve"><value>取消固定</value></data>
+  <data name="Up to 6 pinned" xml:space="preserve"><value>最多固定 6 个</value></data>
+  <data name="Score by sensitivity" xml:space="preserve"><value>各灵敏度的分数</value></data>
+  <data name="Advice" xml:space="preserve"><value>建议</value></data>
+  <data name="Your scores this session are {0:0}% above your recent average. Whatever you did differently today is **worth repeating**." xml:space="preserve"><value>本次训练的分数比你最近的平均水平高 {0:0}%。今天无论你有什么与平时不同的做法，都**值得继续保持**。</value></data>
+  <data name="Your scores this session are {0:0}% below your recent average. Tired or unfocused days happen, so consider ending on an **easier scenario** or taking a break." xml:space="preserve"><value>本次训练的分数比你最近的平均水平低 {0:0}%。疲惫或不专注的日子难免会有，不妨用**较简单的场景**收尾，或者休息一下。</value></data>
+  <data name="{0} is {1:0}% below your recent average this session. It is the scenario holding the session back, so give it a **few extra warm-up runs**." xml:space="preserve"><value>本次训练中，{0} 比你最近的平均水平低 {1:0}%。它拖了整场训练的后腿，建议**多热身几局**。</value></data>
+  <data name="{0} is {1:0}% above your recent average this session. You are in rhythm on it, so this is a good time to **push for a personal best**." xml:space="preserve"><value>本次训练中，{0} 比你最近的平均水平高 {1:0}%。你在这个场景里正有节奏，现在是**冲击个人最佳**的好时机。</value></data>
+  <data name="The second half of your session scored {0:0}% lower than the first. Focus tends to fade after a while, so try a **short break** halfway or end the session sooner." xml:space="preserve"><value>本次训练后半段的分数比前半段低 {0:0}%。注意力往往会随时间下降，可以在中途**短暂休息**，或者提前结束训练。</value></data>
+  <data name="The first half of your session scored {0:0}% lower than the second. You seem to need time to settle in, so **warm up** on an easier scenario before the ones that count." xml:space="preserve"><value>本次训练前半段的分数比后半段低 {0:0}%。你似乎需要一些时间进入状态，建议在重要场景之前先用较简单的场景**热身**。</value></data>
+  <data name="You fired {0:0.00} shots per kill at targets already dead this session, against {1:0.00} recently. Tiredness or impatience often causes this, so **release the click** the moment a target breaks." xml:space="preserve"><value>本次训练中，你每次击杀会向已被击杀的目标多开 {0:0.00} 枪，最近平均为 {1:0.00} 枪。这通常由疲劳或急躁造成，目标一被击破就**松开鼠标**。</value></data>
+  <data name="Your last 5 runs average {0:0}% below the 5 before. Fatigue or lost focus often causes a dip like this, so take a **short break** or warm up on an easier scenario before continuing." xml:space="preserve"><value>最近 5 局的平均分比之前 5 局低 {0:0}%。疲劳或注意力下降常会造成这种下滑，建议**短暂休息**，或用较简单的场景热身后再继续。</value></data>
+  <data name="Your best runs have {0:0}% smoother mouse movement. Your good runs reach each target in **one clean motion**, so try not to stop and correct on the way." xml:space="preserve"><value>你最好的几局鼠标移动平滑度高出 {0:0}%。好成绩的特点是**一气呵成**地到达每个目标，尽量不要中途停下再修正。</value></data>
+  <data name="Your best runs change direction {0:0}% less often. Frequent reversals usually mean **overcorrecting**, so try making smaller, calmer adjustments." xml:space="preserve"><value>你最好的几局方向变化少 {0:0}%。频繁折返通常意味着**过度修正**，试着做更小、更平稳的调整。</value></data>
+  <data name="Your best runs click {0:0} ms sooner after the mouse stops. Waiting after you arrive costs time, so try **clicking as you land** on the target." xml:space="preserve"><value>你最好的几局在鼠标停下后点击快 {0:0} 毫秒。到达后再等待会浪费时间，试着**一到目标就点击**。</value></data>
+  <data name="Your best runs react in {0:0.00}s, your worst in {1:0.00}s. Deciding on the next target **earlier** saves time, so look for it before you finish the current one." xml:space="preserve"><value>你最好的几局反应时间为 {0:0.00} 秒，最差的几局为 {1:0.00} 秒。**更早**确定下一个目标能节省时间，在打完当前目标之前就去找下一个。</value></data>
+  <data name="Your average is {0:0}% higher at {1} cm/360 ({2} runs) than at your usual {3} cm/360. This scenario rewards **fine control** more than reach, so try playing it at the lower sensitivity more often." xml:space="preserve"><value>你在 {1} cm/360（{2} 局）下的平均分比平时的 {3} cm/360 高 {0:0}%。这个场景更看重**精细控制**而不是移动幅度，建议多用较低的灵敏度来玩。</value></data>
+  <data name="Your average is {0:0}% higher at {1} cm/360 ({2} runs) than at your usual {3} cm/360. This scenario rewards **reaching targets quickly** more than fine control, so try playing it at the higher sensitivity more often." xml:space="preserve"><value>你在 {1} cm/360（{2} 局）下的平均分比平时的 {3} cm/360 高 {0:0}%。这个场景更看重**快速到达目标**而不是精细控制，建议多用较高的灵敏度来玩。</value></data>
+  <data name="Your last 5 runs average {0:0}% below the 5 before. A drop this large rarely recovers by playing on, so **stop this scenario for today**; practice while tired mostly trains tired habits." xml:space="preserve"><value>最近 5 局的平均分比之前 5 局低 {0:0}%。降幅这么大，继续玩很难恢复，**今天先别玩这个场景了**；疲劳时练习多半只会练出疲劳的习惯。</value></data>
+  <data name="{0} plays since your last personal best. Repeating the same drill has stopped raising it, so spend a while on a **variant** of this scenario (smaller or faster targets, another sensitivity) and then come back." xml:space="preserve"><value>距离上次个人最佳已经玩了 {0} 次。重复同一个练习已经无法再提高成绩，建议先花一段时间练这个场景的**变体**（更小或更快的目标、其他灵敏度），然后再回来。</value></data>
+  <data name="Your first run of each sitting scores {0:0}% below the runs after it. The first attempt goes to getting used to the scenario again, so treat it as a **warm-up run** and judge yourself on the ones that follow." xml:space="preserve"><value>每次开始训练时，你的第一局比之后的成绩低 {0:0}%。第一次尝试主要用来重新适应场景，把它当作**热身局**，用之后的成绩来评判自己。</value></data>
+  <data name="After {0} runs in a row your scores drop {1:0}%. Long streaks on one scenario stop paying off, so **switch to another scenario** after about {0} runs and come back later." xml:space="preserve"><value>连续玩 {0} 局之后，你的分数会下降 {1:0}%。长时间连续玩同一个场景收益会递减，玩大约 {0} 局后**换一个场景**，稍后再回来。</value></data>
+  <data name="Your best runs take a straighter path to each target ({0:P0} direct, against {1:P0} in your worst). Curved or wandering paths waste time, so **aim in a straight line** at the target before you move." xml:space="preserve"><value>你最好的几局走向目标的路径更直（直线度 {0:P0}，最差的几局为 {1:P0}）。弯曲或游移的路径会浪费时间，移动之前先**沿直线**瞄准目标。</value></data>
+  <data name="{0} of the {1} scenarios this session got only one run. A single attempt mostly goes to getting used to the scenario, so play **fewer scenarios a few runs each**." xml:space="preserve"><value>本次训练的 {1} 个场景中有 {0} 个只玩了一局。单次尝试大多用于适应场景，建议**少玩几个场景，每个多玩几局**。</value></data>
+  <data name="You played {0} {1} times in a row, and the runs after the first {2} scored {3:0}% lower. Returns fade on a long streak, so **move on** to another scenario sooner and come back later." xml:space="preserve"><value>你连续玩了 {1} 次 {0}，前 {2} 局之后的成绩低了 {3:0}%。连续玩得越久收益越低，建议更早**换到别的场景**，稍后再回来。</value></data>
+  <data name="Your scores are highest when you hit {0:P0}–{1:P0} of your shots. Your last 10 runs average {2:P0}, so take **a little more care** with each shot." xml:space="preserve"><value>当你的命中率在 {0:P0}–{1:P0} 时分数最高。你最近 10 局平均为 {2:P0}，所以每一枪要**再谨慎一点**。</value></data>
+  <data name="Your scores are highest when you hit {0:P0}–{1:P0} of your shots. Your last 10 runs average {2:P0}, so **push the pace** and take shots sooner, even if a few more miss." xml:space="preserve"><value>当你的命中率在 {0:P0}–{1:P0} 时分数最高。你最近 10 局平均为 {2:P0}，所以要**加快节奏**，更早开枪，哪怕多漏几枪也没关系。</value></data>
+  <data name="Your best runs fire {0:0.00} shots per kill at targets that are already dead, your worst {1:0.00}. Those extra shots cost time, so **release the click** the moment a target breaks." xml:space="preserve"><value>你最好的几局每次击杀会向已被击杀的目标多开 {0:0.00} 枪，最差的几局为 {1:0.00} 枪。这些多余的射击会浪费时间，目标一被击破就**松开鼠标**。</value></data>
+  <data name="Accuracy by sensitivity" xml:space="preserve"><value>各灵敏度的准确率</value></data>
+  <data name="cm/360" xml:space="preserve"><value>cm/360</value></data>
+  <data name="Mouse speed" xml:space="preserve"><value>鼠标速度</value></data>
+  <data name="Last play" xml:space="preserve"><value>上次游玩</value></data>
+  <data name="Tracking" xml:space="preserve"><value>追踪</value></data>
+  <data name="Switching" xml:space="preserve"><value>切换</value></data>
+  <data name="Flick" xml:space="preserve"><value>甩枪</value></data>
+  <data name="Strongest" xml:space="preserve"><value>最强</value></data>
+  <data name="Tier level" xml:space="preserve"><value>段位水平</value></data>
+  <data name="Average speed" xml:space="preserve"><value>平均速度</value></data>
+  <data name="Firing speed" xml:space="preserve"><value>开火时速度</value></data>
+  <data name="Direction changes" xml:space="preserve"><value>方向变化</value></data>
+  <data name="Firing time" xml:space="preserve"><value>开火时间占比</value></data>
+  <data name="Max speed" xml:space="preserve"><value>最高速度</value></data>
+  <data name="Non-firing speed" xml:space="preserve"><value>未开火时速度</value></data>
+  <data name="Flick distance" xml:space="preserve"><value>甩枪距离</value></data>
+  <data name="Peak flick speed" xml:space="preserve"><value>甩枪峰值速度</value></data>
+  <data name="Flick time" xml:space="preserve"><value>甩枪时间</value></data>
+  <data name="Reaction time" xml:space="preserve"><value>反应时间</value></data>
+  <data name="Path efficiency" xml:space="preserve"><value>路径效率</value></data>
+  <data name="Time between kills" xml:space="preserve"><value>击杀间隔</value></data>
+  <data name="Speed variation" xml:space="preserve"><value>速度波动</value></data>
+  <data name="Jerk" xml:space="preserve"><value>急动度</value></data>
+  <data name="Top 5%" xml:space="preserve"><value>前 5%</value></data>
+  <data name="Bottom 5%" xml:space="preserve"><value>后 5%</value></data>
+  <data name="Apply" xml:space="preserve"><value>应用</value></data>
+  <data name="Click to edit" xml:space="preserve"><value>点击编辑</value></data>
+  <data name="Recorded: {0}" xml:space="preserve"><value>记录值：{0}</value></data>
+  <data name="Downloading…" xml:space="preserve"><value>下载中…</value></data>
+  <data name="Downloading… {0}%" xml:space="preserve"><value>下载中… {0}%</value></data>
+  <data name="Restarting…" xml:space="preserve"><value>正在重新启动…</value></data>
+  <data name="Update failed. Download it from the release page instead." xml:space="preserve"><value>更新失败，请改从发布页面下载。</value></data>
+  <data name="Stats" xml:space="preserve"><value>统计</value></data>
+  <data name="Auto" xml:space="preserve"><value>自动</value></data>
+  <data name="Rank up" xml:space="preserve"><value>提升段位</value></data>
+  <data name="PB streak" xml:space="preserve"><value>连续 PB</value></data>
+  <data name="Recent" xml:space="preserve"><value>最近</value></data>
+  <data name="New" xml:space="preserve"><value>新的</value></data>
+  <data name="Played lately" xml:space="preserve"><value>最近玩过</value></data>
+  <data name="Not played lately" xml:space="preserve"><value>久未游玩</value></data>
+  <data name="Never played" xml:space="preserve"><value>从未玩过</value></data>
+  <data name="Short" xml:space="preserve"><value>短</value></data>
+  <data name="Long" xml:space="preserve"><value>长</value></data>
+  <data name="Favorites" xml:space="preserve"><value>收藏</value></data>
+  <data name="Beginner" xml:space="preserve"><value>初级</value></data>
+  <data name="Intermediate" xml:space="preserve"><value>中级</value></data>
+  <data name="Advanced" xml:space="preserve"><value>高级</value></data>
+  <data name="Last 30 days" xml:space="preserve"><value>最近 30 天</value></data>
+  <data name="All time" xml:space="preserve"><value>全部</value></data>
+  <data name="This session" xml:space="preserve"><value>本次训练</value></data>
+  <data name="Per run average" xml:space="preserve"><value>每局平均</value></data>
+  <data name="Run length" xml:space="preserve"><value>单局时长</value></data>
+  <data name="Time of day" xml:space="preserve"><value>时段</value></data>
+  <data name="Average / Best" xml:space="preserve"><value>平均 / 最佳</value></data>
+  <data name="Continue in the app" xml:space="preserve"><value>在应用中继续查看</value></data>
+  <data name="Loading the video..." xml:space="preserve"><value>正在加载视频...</value></data>
+  <data name="Loading..." xml:space="preserve"><value>加载中...</value></data>
+  <data name="No overview yet. Start the app once so it can write it." xml:space="preserve"><value>还没有概览。启动一次应用即可生成。</value></data>
+  <data name="Play a replay once to choose the folder." xml:space="preserve"><value>播放一次回放以选择文件夹。</value></data>
+  <data name="Play replay ({0})" xml:space="preserve"><value>播放回放 ({0})</value></data>
+  <data name="Select folder" xml:space="preserve"><value>选择文件夹</value></data>
+  <data name="Select the folder that has your replay videos:" xml:space="preserve"><value>请选择存放回放视频的文件夹：</value></data>
+  <data name="Statistics" xml:space="preserve"><value>统计</value></data>
+  <data name="The video could not be read: " xml:space="preserve"><value>无法读取视频：</value></data>
+  <data name="The video was not found. Select the folder that has your replay videos:" xml:space="preserve"><value>找不到视频。请选择存放回放视频的文件夹：</value></data>
+  <data name="This browser cannot open a folder of videos. Use Chrome or Edge." xml:space="preserve"><value>此浏览器无法打开视频文件夹。请使用 Chrome 或 Edge。</value></data>
+</root>

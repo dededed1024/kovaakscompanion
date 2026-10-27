@@ -33,7 +33,7 @@ docs/                      specs and this wiki
 - Chart and visual controls: `ScoreChart`, `RunChart`, `RadarChart`, `CompareChart`, `InsightCharts`, `ProgressRing`, `RangeBar`, `ActivityCalendar`, `BenchmarkTable`.
 - Small UI helpers: scrolling, fonts, colors, backdrop, row click, glyph buttons.
 - `AppHost`, `App.xaml`: startup, tray, single instance, autostart.
-- `Resources/`: localized strings (English default, Korean).
+- `Resources/`: localized strings (English default, Korean, Chinese, Russian).
 
 ## Data on disk
 
