@@ -14,11 +14,34 @@ public static partial class SteamLaunchOption
 
     public enum Result { Done, SteamRunning, NotFound }
 
-    /// <summary>The option text: cmd runs the app detached, then the game (Steam replaces %command% with the game's command line).</summary>
-    public static string Build(string exePath, string trayArg) => $"cmd /c start \"\" \"{exePath}\" {trayArg} & %command%";
+    /// <summary>Argument after which the app finds the game's command line (Steam replaces %command% with it).</summary>
+    public const string GameArg = "--with-game";
 
-    [GeneratedRegex("^cmd /c start \"\" \"[^\"]*KovaaksCompanion[^\"]*\" \\S+ & ", RegexOptions.IgnoreCase)]
+    /// <summary>The option text: the app starts the game itself and the tray instance beside it. No cmd, so no console window stays open.</summary>
+    public static string Build(string exePath, string trayArg) => $"\"{exePath}\" {trayArg} {GameArg} %command%";
+
+    // The second alternative is the older cmd form; it is still recognized so it gets rewritten.
+    [GeneratedRegex("^(\"[^\"]*KovaaksCompanion[^\"]*\" \\S+ --with-game |cmd /c start \"\" \"[^\"]*KovaaksCompanion[^\"]*\" \\S+ & )", RegexOptions.IgnoreCase)]
     private static partial Regex OwnPrefix();
+
+    /// <summary>Splits the command line after <see cref="GameArg"/> into the game's exe and its arguments; null when there is none.</summary>
+    public static (string Exe, string Args)? ParseGame(string commandLine)
+    {
+        var i = commandLine.IndexOf(GameArg + " ", StringComparison.OrdinalIgnoreCase);
+        if (i < 0) return null;
+        var rest = commandLine[(i + GameArg.Length + 1)..].TrimStart();
+        if (rest.Length == 0) return null;
+        int end;
+        if (rest[0] == '"')
+        {
+            var close = rest.IndexOf('"', 1);
+            if (close < 0) return null;
+            return (rest[1..close], rest[(close + 1)..].Trim());
+        }
+        end = rest.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
+        end = end < 0 ? rest.IndexOf(' ') : end + 4;
+        return end < 0 ? (rest, "") : (rest[..end], rest[end..].Trim());
+    }
 
     public static bool IsOwn(string option) => OwnPrefix().IsMatch(option);
 

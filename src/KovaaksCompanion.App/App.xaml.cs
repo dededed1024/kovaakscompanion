@@ -1,7 +1,10 @@
+using System.Diagnostics;
+using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
+using KovaaksCompanion.Core;
 using KovaaksCompanion.Core.Diagnostics;
 using KovaaksCompanion.Core.Update;
 using KovaaksCompanion.Core.Web;
@@ -37,6 +40,7 @@ public partial class App : Application
     {
         base.OnStartup(e);
         System.Windows.Controls.ToolTipService.InitialShowDelayProperty.OverrideMetadata(typeof(DependencyObject), new FrameworkPropertyMetadata(100));
+        if (SteamLaunchOption.ParseGame(Environment.CommandLine) is { } game) { RunGame(game.Exe, game.Args); Shutdown(); return; }
         MiddleScroll.Register();
         DispatcherUnhandledException += (_, a) => Unhandled("ui thread", a.Exception);
         AppDomain.CurrentDomain.UnhandledException += (_, a) => Unhandled("unhandled", a.ExceptionObject as Exception);
@@ -81,6 +85,23 @@ public partial class App : Application
     {
         if (ex == null) return;
         AppLog.Error(title, ex);
+    }
+
+    /// <summary>Steam launch option mode: starts the tray instance, then the game, and stays (without a window) until the game exits so Steam sees it running.</summary>
+    static void RunGame(string gameExe, string gameArgs)
+    {
+        try
+        {
+            if (Environment.ProcessPath is { } self)
+                Process.Start(new ProcessStartInfo(self, Autostart.TrayArg) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(self)! })?.Dispose();
+        }
+        catch (Exception e) when (e is IOException or System.ComponentModel.Win32Exception) { AppLog.Error("start tray", e); }
+        try
+        {
+            using var game = Process.Start(new ProcessStartInfo(gameExe, gameArgs) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(gameExe) ?? "" });
+            game?.WaitForExit();
+        }
+        catch (Exception e) when (e is IOException or System.ComponentModel.Win32Exception) { AppLog.Error("start game", e); }
     }
 
     /// <summary>Waits for the previous instance to release the mutex; abandoned counts as acquired.</summary>
