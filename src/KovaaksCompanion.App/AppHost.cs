@@ -484,14 +484,35 @@ public sealed class AppHost : IDisposable
         _video.GameLaunched += Live.Launch;
         _video.GameExited += () =>
         {
-            // The session summary opens first: Live.Exit forgets which session is the open one.
-            try { _app.Dispatcher.Invoke(() => { if (Live.Id != null) { ShowMain(); _main!.ShowLiveSession(); } }); }
-            catch (Exception e) { SetError("session summary: " + e.Message, e); }
-            _ = Live.Exit();
+            // The session summary opens first: Live.Exit forgets which session is the open one. Exiting with the game skips it.
+            if (!_settings.ExitWithGame)
+            {
+                try { _app.Dispatcher.Invoke(() => { if (Live.Id != null) { ShowMain(); _main!.ShowLiveSession(); } }); }
+                catch (Exception e) { SetError("session summary: " + e.Message, e); }
+            }
+            var flushed = Live.Exit();
+            if (_settings.ExitWithGame) _ = QuitAfterGame(flushed);
         };
         _video.StateChanged += () => GameStateChanged?.Invoke();
         _video.GameSized += (w, h) => { if (w != _settings.GameWidth || h != _settings.GameHeight) ApplySettings(_settings with { GameWidth = w, GameHeight = h }); };
         try { _video.Start(); } catch (Exception e) { SetError("video: " + e.Message, e); }
+    }
+
+    static readonly TimeSpan StatsGrace = TimeSpan.FromSeconds(5);
+
+    /// <summary>Exits once the session is saved and no run is still being cut or archived (a pending run leaves the list after its archive write); a failed save does not hold the exit.</summary>
+    async Task QuitAfterGame(Task flushed)
+    {
+        try { await flushed; }
+        catch (Exception e) { AppLog.Error("session flush", e); }
+        await Task.Delay(StatsGrace); // the last run's stats file can still be on its way to the stats watcher
+        var give = DateTime.UtcNow + TimeSpan.FromMinutes(5);
+        while (DateTime.UtcNow < give)
+        {
+            lock (_pending) { if (_pending.Count == 0) break; }
+            await Task.Delay(500);
+        }
+        _app.Dispatcher.Invoke(_app.Shutdown);
     }
 
     void StartCapture()
